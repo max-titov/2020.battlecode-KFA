@@ -18,7 +18,8 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
-
+    static MapLocation hqLoc;
+    
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -31,7 +32,6 @@ public strictfp class RobotPlayer {
         RobotPlayer.rc = rc;
 
         turnCount = 0;
-        MapLocation hqLoc;
 
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
@@ -40,7 +40,6 @@ public strictfp class RobotPlayer {
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
-                System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
                     case HQ:                 runHQ();                break;
                     case MINER:              runMiner();             break;
@@ -70,7 +69,12 @@ public strictfp class RobotPlayer {
 
     static void runMiner() throws GameActionException {
     	if(hqLoc==null) {
-    		
+			RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+			for (RobotInfo bot : nearbyBots) {
+				if(bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
+					hqLoc = bot.location;
+				}
+			}
     	}
         tryBlockchain();
         for (Direction dir : directions)
@@ -79,8 +83,14 @@ public strictfp class RobotPlayer {
         for (Direction dir : directions)
             if (tryMine(dir))
                 System.out.println("I mined soup! " + rc.getSoupCarrying());
-        if (tryMove(randomDirection()))
+        if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
+        	System.out.println("at max");
+        	Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+        	tryMove(dirToHQ);
+        }
+        else if (tryMove(randomDirection()))
             System.out.println("I moved!");
+        
         // tryBuild(randomSpawnedByMiner(), randomDirection());
         for (Direction dir : directions)
             tryBuild(RobotType.FULFILLMENT_CENTER, dir);
