@@ -1,6 +1,6 @@
 package max;
 import battlecode.common.*;
-//no u
+//you smell like poop
 public strictfp class RobotPlayer {
     static RobotController rc;
 
