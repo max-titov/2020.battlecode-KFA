@@ -1,4 +1,4 @@
-package lectureplayer;
+package max;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
