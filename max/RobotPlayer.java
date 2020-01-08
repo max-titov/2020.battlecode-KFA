@@ -1,6 +1,6 @@
 package max;
 import battlecode.common.*;
-//you smell like poop
+//lets play terraria
 public strictfp class RobotPlayer {
     static RobotController rc;
 
