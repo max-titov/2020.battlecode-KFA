@@ -1,6 +1,6 @@
 package max;
 import battlecode.common.*;
-//NATHAN WAS HERE
+//no u
 public strictfp class RobotPlayer {
     static RobotController rc;
 
