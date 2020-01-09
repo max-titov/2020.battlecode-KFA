@@ -63,8 +63,10 @@ public strictfp class RobotPlayer {
   }
 
   static void runHQ() throws GameActionException {
-      for (Direction dir : directions)
+      for (Direction dir : directions) {
+    	  if(rc.getRobotCount() <= 10)
           tryBuild(RobotType.MINER, dir);
+      }
   }
 
   static void runMiner() throws GameActionException {
@@ -86,9 +88,10 @@ public strictfp class RobotPlayer {
       	Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
       	tryMove(dirToHQ);
       }
-      else if (tryMove(randomDirection()))
+      else if (tryMove(randomDirection())) {
+      	tryBuild(randomSpawnedByMiner(), randomDirection());
+      }
       
-      // tryBuild(randomSpawnedByMiner(), randomDirection());
       for (Direction dir : directions)
           tryBuild(RobotType.FULFILLMENT_CENTER, dir);
       
@@ -134,7 +137,7 @@ public strictfp class RobotPlayer {
   }
 
   static void runNetGun() throws GameActionException {
-
+	  
   }
 
   /**
