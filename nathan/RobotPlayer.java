@@ -65,7 +65,7 @@ public strictfp class RobotPlayer {
   static void runHQ() throws GameActionException {
       for (Direction dir : directions) {
     	  if(rc.getRobotCount() <= 8)
-          tryBuild(RobotType.MINER, dir);
+    		  tryBuild(RobotType.MINER, dir);
       }
   }
 
@@ -100,12 +100,12 @@ public strictfp class RobotPlayer {
     	  if(info.type == RobotType.DESIGN_SCHOOL)
     		  nearbySchoolCount += 1;
       }
-      if(rc.getRobotCount() <= 10)
-    	  tryBuild(RobotType.FULFILLMENT_CENTER,randomDirection());
-      if(nearbyRefineryCount <= 3) {
+      if(nearbyRefineryCount <= 1) {
     	  tryBuild(RobotType.REFINERY,randomDirection());
       }
-      if(nearbySchoolCount <= 3) {
+      if(rc.getRobotCount() <= 14)
+    	  tryBuild(RobotType.FULFILLMENT_CENTER,randomDirection());
+      if(nearbySchoolCount <= 1) {
     	  tryBuild(RobotType.DESIGN_SCHOOL, Direction.EAST);
       }
       
