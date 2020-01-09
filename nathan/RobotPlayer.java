@@ -100,12 +100,13 @@ public strictfp class RobotPlayer {
     	  if(info.type == RobotType.DESIGN_SCHOOL)
     		  nearbySchoolCount += 1;
       }
-      if(nearbyRefineryCount <= 1) {
+      tryBuild(RobotType.VAPORATOR, randomDirection());
+      if(rc.getRobotCount() <= 12) {
     	  tryBuild(RobotType.REFINERY,randomDirection());
       }
       if(rc.getRobotCount() <= 14)
     	  tryBuild(RobotType.FULFILLMENT_CENTER,randomDirection());
-      if(nearbySchoolCount <= 1) {
+      if(rc.getRobotCount() <= 16) {
     	  tryBuild(RobotType.DESIGN_SCHOOL, Direction.EAST);
       }
       
@@ -119,19 +120,21 @@ public strictfp class RobotPlayer {
   }
 
   static void runVaporator() throws GameActionException {
-
+	  
   }
 
   static void runDesignSchool() throws GameActionException {
+	  if(rc.getRobotCount() <= 18)
 	  tryBuild(RobotType.LANDSCAPER, Direction.NORTH);
   }
 
   static void runFulfillmentCenter() throws GameActionException {
+	  if(rc.getRobotCount() <= 18)
       tryBuild(RobotType.DELIVERY_DRONE, Direction.EAST);
   }
 
   static void runLandscaper() throws GameActionException {
-
+	  tryMove(randomDirection());
   }
 
   static void runDeliveryDrone() throws GameActionException {
