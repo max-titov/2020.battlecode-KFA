@@ -64,7 +64,7 @@ public strictfp class RobotPlayer {
 
   static void runHQ() throws GameActionException {
       for (Direction dir : directions) {
-    	  if(rc.getRobotCount() <= 10)
+    	  if(rc.getRobotCount() <= 8)
           tryBuild(RobotType.MINER, dir);
       }
   }
@@ -89,11 +89,24 @@ public strictfp class RobotPlayer {
       	tryMove(dirToHQ);
       }
       else if (tryMove(randomDirection())) {
-      	tryBuild(randomSpawnedByMiner(), randomDirection());
+      	//tryBuild(randomSpawnedByMiner(), randomDirection());
       }
-      
-      for (Direction dir : directions)
-          tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+      RobotInfo[] nearbyArray = rc.senseNearbyRobots();
+      int nearbyRefineryCount = 0;
+      int nearbySchoolCount = 0;
+      for(RobotInfo info : nearbyArray) {
+    	  if(info.type == RobotType.REFINERY)
+    		  nearbyRefineryCount += 1;
+    	  if(info.type == RobotType.DESIGN_SCHOOL)
+    		  nearbySchoolCount += 1;
+      }
+      if(nearbyRefineryCount < 1)
+    	  tryBuild(RobotType.REFINERY,randomDirection());
+      if(nearbySchoolCount <= 3) {
+    	  tryBuild(RobotType.DESIGN_SCHOOL, Direction.EAST);
+      }
+    	  
+      //for (Direction dir : directions)
       
       
   }
@@ -107,7 +120,7 @@ public strictfp class RobotPlayer {
   }
 
   static void runDesignSchool() throws GameActionException {
-
+	  tryBuild(RobotType.LANDSCAPER, Direction.NORTH);
   }
 
   static void runFulfillmentCenter() throws GameActionException {
