@@ -20,6 +20,7 @@ public strictfp class RobotPlayer {
 	// MINER
 	static MapLocation hqLoc;
 	static ArrayList<MapLocation> soups = new ArrayList<MapLocation>();
+	static MapLocation[][] = 
 
 	// REFINERY
 
@@ -330,8 +331,9 @@ public strictfp class RobotPlayer {
 //    			} else if (soups.contains(loc)) {
 //    				soups.remove(loc);
 //    			}
-    			//soups.add(loc);
     		}
     	}
     }
+	
+	static MapLocation ml(int x, int y)
 }

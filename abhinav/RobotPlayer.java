@@ -1,6 +1,6 @@
 package abhinav;
 import battlecode.common.*;
-
+//i can see you
 public strictfp class RobotPlayer {
     static RobotController rc;
 
