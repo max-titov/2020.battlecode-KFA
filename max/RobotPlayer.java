@@ -20,7 +20,14 @@ public strictfp class RobotPlayer {
 	// MINER
 	static MapLocation hqLoc;
 	static ArrayList<MapLocation> soups = new ArrayList<MapLocation>();
-	static MapLocation[][] = 
+	static MapLocation[][] visionCircles = {
+			{l(0,0)},
+			{l(-1,0),l(0,-1),l(1,0),l(0,1)},
+			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),l(-1,2),l(0,2),l(1,2),l(1,1),l(2,1),l(2,0),l(2,-1),l(1,-1),l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)}
+			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),l(-3,2),l(-2,2),l(-2,3),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),
+	
+	};
+	
 
 	// REFINERY
 
@@ -335,5 +342,7 @@ public strictfp class RobotPlayer {
     	}
     }
 	
-	static MapLocation ml(int x, int y)
+	static MapLocation l(int x, int y) {
+		return new MapLocation(x,y);
+	}
 }
