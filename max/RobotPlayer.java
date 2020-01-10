@@ -19,13 +19,15 @@ public strictfp class RobotPlayer {
 	
 	// MINER
 	static MapLocation hqLoc;
-	static ArrayList<MapLocation> soups = new ArrayList<MapLocation>();
+	static MapLocation soupLoc;
 	static MapLocation[][] visionCircles = {
 			{l(0,0)},
 			{l(-1,0),l(0,-1),l(1,0),l(0,1)},
-			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),l(-1,2),l(0,2),l(1,2),l(1,1),l(2,1),l(2,0),l(2,-1),l(1,-1),l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)}
-			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),l(-3,2),l(-2,2),l(-2,3),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),l(,),
-	
+			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),l(-1,2),l(0,2),l(1,2),l(1,1),l(2,1),l(2,0),l(2,-1),l(1,-1),l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)},
+			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),l(-3,2),l(-2,2),l(-2,3),l(-1,3),l(0,3),l(1,3),l(2,3),l(2,2),l(3,2),l(3,1),l(3,0),l(3,-1),l(3,-2),l(2,-2),l(2,-3),l(1,-3),l(0,-3),l(-1,-3),l(-2,-3),l(-2,-2)},
+			{l(-4,-2),l(-4,-1),l(-4,0),l(-4,1),l(-4,2),l(-3,3),l(-2,4),l(-1,4),l(0,4),l(1,4),l(2,4),l(3,3),l(4,2),l(4,1),l(4,0),l(4,-1),l(4,-2),l(3,-3),l(2,-4),l(1,-4),l(0,-4),l(-1,-4),l(-2,-4),l(-3,-3)},
+			{l(-5,-3),l(-5,-2),l(-5,-1),l(-5,0),l(-5,1),l(-5,2),l(-5,3),l(-4,3),l(-4,4),l(-3,4),l(-3,5),l(-2,5),l(-1,5),l(0,5),l(1,5),l(2,5),l(3,5),l(3,4),l(4,4),l(4,3),l(5,3),l(5,2),l(5,1),l(5,0),l(5,-1),l(5,-2),l(5,-3),l(4,-3),l(4,-4),l(3,-4),l(3,-5),l(2,-5),l(1,-5),l(0,-5),l(-1,-5),l(-2,-5),l(-3,-5),l(-3,-4),l(-4,-4),l(-4,-3)},
+			{l(0,0)}
 	};
 	
 
@@ -107,7 +109,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if(numMiners < 2) {
+		if(numMiners < 1) {
             for (Direction dir : directions)
                 if(tryBuild(RobotType.MINER, dir)){
                     numMiners++;
@@ -124,31 +126,24 @@ public strictfp class RobotPlayer {
 				}
 			}
 		}
-		updateSoupLocs();
-		System.out.println(soups);
 		// tryBlockchain();
+		nearbySoup();
+		if(soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
+			soupLoc = null;
+		}
+		System.out.println(soupLoc);
 		for (Direction dir : directions)
 			tryRefine(dir);
-		boolean soupAtLoc = false;
 		for (Direction dir : directions) {
 			if (tryMine(dir)) {
-				if (!soups.contains(rc.getLocation())) {
-					soups.add(rc.getLocation());
-				}
-				soupAtLoc = true;
 			}
 		}
-//        if(!soupAtLoc) {
-//        	if(soups.contains(rc.getLocation())) {
-//        		soups.remove(rc.getLocation());
-//        	}
-//        }
 
 		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
 			Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 			tryMove(dirToHQ);
-		} else if (!soups.isEmpty()) {
-			Direction dirToSoup = rc.getLocation().directionTo(soups.get(0));
+		} else if (soupLoc != null) {
+			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
 			tryMove(dirToSoup);
 		} else if (tryMove(randomDirection()))
 
@@ -324,20 +319,18 @@ public strictfp class RobotPlayer {
 		return radiusInTiles;
 	}
 
-	static void updateSoupLocs() throws GameActionException {
+	static void nearbySoup() throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
+		int x = currentLoc.x;
+		int y = currentLoc.y;
 		int radiusInTiles = radiusInTiles();
-    	int diameterInTiles = radiusInTiles*2+1;
-    	//MapLocation[][] soupGrid = new MapLocation[tileDiameter][tileDiameter];
-    	System.out.println(radiusInTiles+" "+diameterInTiles);
-    	for(int r = 0; r<diameterInTiles; r++) {
-    		for(int c = 0; c<diameterInTiles; c++) {
-    			MapLocation loc = new MapLocation(currentLoc.x-radiusInTiles+c, currentLoc.y-radiusInTiles+r);
-//    			if(rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0 && !soups.contains(loc)) {
-//    				soups.add(loc);
-//    			} else if (soups.contains(loc)) {
-//    				soups.remove(loc);
-//    			}
+    	for(int radius = 0; radius<=radiusInTiles; radius++) {
+    		for(int i = 0; i<visionCircles[radius].length; i++) {
+    			MapLocation loc = new MapLocation(x+visionCircles[radius][i].x, y+visionCircles[radius][i].y);
+    			if(rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0) {
+    				soupLoc = loc;
+    				return;
+    			}
     		}
     	}
     }
