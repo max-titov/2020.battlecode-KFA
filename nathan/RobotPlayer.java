@@ -65,7 +65,7 @@ public strictfp class RobotPlayer {
   static void runHQ() throws GameActionException {
       for (Direction dir : directions) {
     	  if(rc.getRobotCount() <= 8)
-          tryBuild(RobotType.MINER, dir);
+    		  tryBuild(RobotType.MINER, dir);
       }
   }
 
@@ -100,12 +100,16 @@ public strictfp class RobotPlayer {
     	  if(info.type == RobotType.DESIGN_SCHOOL)
     		  nearbySchoolCount += 1;
       }
-      if(nearbyRefineryCount < 1)
+      tryBuild(RobotType.VAPORATOR, randomDirection());
+      if(rc.getRobotCount() <= 12) {
     	  tryBuild(RobotType.REFINERY,randomDirection());
-      if(nearbySchoolCount <= 3) {
+      }
+      if(rc.getRobotCount() <= 14)
+    	  tryBuild(RobotType.FULFILLMENT_CENTER,randomDirection());
+      if(rc.getRobotCount() <= 16) {
     	  tryBuild(RobotType.DESIGN_SCHOOL, Direction.EAST);
       }
-    	  
+      
       //for (Direction dir : directions)
       
       
@@ -116,20 +120,21 @@ public strictfp class RobotPlayer {
   }
 
   static void runVaporator() throws GameActionException {
-
+	  
   }
 
   static void runDesignSchool() throws GameActionException {
+	  if(rc.getRobotCount() <= 18)
 	  tryBuild(RobotType.LANDSCAPER, Direction.NORTH);
   }
 
   static void runFulfillmentCenter() throws GameActionException {
-      for (Direction dir : directions)
-          tryBuild(RobotType.DELIVERY_DRONE, dir);
+	  if(rc.getRobotCount() <= 18)
+      tryBuild(RobotType.DELIVERY_DRONE, Direction.EAST);
   }
 
   static void runLandscaper() throws GameActionException {
-
+	  tryMove(randomDirection());
   }
 
   static void runDeliveryDrone() throws GameActionException {
