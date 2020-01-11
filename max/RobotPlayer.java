@@ -16,7 +16,7 @@ public strictfp class RobotPlayer {
 
 	// HQ
 	static int numMiners = 0;
-	
+
 	// MINER
 	static MapLocation hqLoc;
 	static MapLocation soupLoc;
@@ -30,7 +30,6 @@ public strictfp class RobotPlayer {
 			{l(0,0)}
 	};
 	
-
 	// REFINERY
 
 	// VAPORATOR
@@ -109,47 +108,62 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if(numMiners < 1) {
-            for (Direction dir : directions)
-                if(tryBuild(RobotType.MINER, dir)){
-                    numMiners++;
-                }
-        }
+		if (numMiners < 10) {
+			for (Direction dir : directions)
+				if (tryBuild(RobotType.MINER, dir)) {
+					numMiners++;
+				}
+		}
 	}
 
 	static void runMiner() throws GameActionException {
-		if (hqLoc == null) {
-			RobotInfo[] nearbyBots = rc.senseNearbyRobots();
-			for (RobotInfo bot : nearbyBots) {
-				if (bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
-					hqLoc = bot.location;
-				}
-			}
-		}
+		findHQ();
+
+		RobotInfo[] nearbyBots = rc.senseNearbyRobots();
 		// tryBlockchain();
+		// scan nearby area for the nearest soup location and save to a variable
 		nearbySoup();
-		if(soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
+		// remove current soup target if the target is empty
+		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
 			soupLoc = null;
 		}
-		System.out.println(soupLoc);
+
+		// refining and mining
 		for (Direction dir : directions)
 			tryRefine(dir);
 		for (Direction dir : directions) {
-			if (tryMine(dir)) {
-			}
+			tryMine(dir);
 		}
 
+		// where to move
+		Direction desiredDir; // where the miner WANTS to go
+		// if full capacity find refinery
 		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
-			Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
-			tryMove(dirToHQ);
-		} else if (soupLoc != null) {
+			RobotInfo refinery = nearbyRobot(RobotType.REFINERY);
+			if (refinery != null) { // if there is a nearby refinery go there
+				Direction dirToRefinery = rc.getLocation().directionTo(refinery.location);
+				desiredDir = dirToRefinery;
+			} else { // go the hq
+				Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+				desiredDir = dirToHQ;
+			}
+		} else if (soupLoc != null) { // move towards saved soup location
 			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
-			tryMove(dirToSoup);
-		} else if (tryMove(randomDirection()))
-
-			// tryBuild(randomSpawnedByMiner(), randomDirection());
-			for (Direction dir : directions)
-				tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+			desiredDir = dirToSoup;
+		} else {
+			//make this shit better
+			desiredDir = randomDirection();
+		}
+		
+		if(rc.canMove(desiredDir)) {
+			rc.move(desiredDir);
+		} else {
+			// bug pathfinding
+			desiredDir = bugPathing(desiredDir);
+			if(desiredDir != null) {
+				rc.move(desiredDir);
+			}
+		}
 
 	}
 
@@ -194,6 +208,17 @@ public strictfp class RobotPlayer {
 
 	static void runNetGun() throws GameActionException {
 
+	}
+
+	static void findHQ() throws GameActionException {
+		if (hqLoc == null) {
+			RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+			for (RobotInfo bot : nearbyBots) {
+				if (bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
+					hqLoc = bot.location;
+				}
+			}
+		}
 	}
 
 	/**
@@ -324,18 +349,63 @@ public strictfp class RobotPlayer {
 		int x = currentLoc.x;
 		int y = currentLoc.y;
 		int radiusInTiles = radiusInTiles();
-    	for(int radius = 0; radius<=radiusInTiles; radius++) {
-    		for(int i = 0; i<visionCircles[radius].length; i++) {
-    			MapLocation loc = new MapLocation(x+visionCircles[radius][i].x, y+visionCircles[radius][i].y);
-    			if(rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0) {
-    				soupLoc = loc;
-    				return;
-    			}
-    		}
-    	}
-    }
-	
+		for (int radius = 0; radius <= radiusInTiles; radius++) {
+			for (int i = 0; i < visionCircles[radius].length; i++) {
+				MapLocation loc = new MapLocation(x + visionCircles[radius][i].x, y + visionCircles[radius][i].y);
+				if (rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0 && !rc.senseFlooding(loc)) {
+					soupLoc = loc;
+					return;
+				}
+			}
+		}
+	}
+
 	static MapLocation l(int x, int y) {
-		return new MapLocation(x,y);
+		return new MapLocation(x, y);
+	}
+
+	static RobotInfo nearbyRobot(RobotType target) throws GameActionException {
+		RobotInfo[] robots = rc.senseNearbyRobots();
+		for (RobotInfo r : robots) {
+			if (r.getType() == target) {
+				return r;
+			}
+		}
+		return null;
+	}
+	
+	static Direction bugPathing(Direction desiredDir) throws GameActionException {
+		Direction result;
+		int desiredDirIndex = 0;
+		//find index of desired direction
+		for(int i = 0; i < directions.length; i++) {
+			if(directions[i].equals(desiredDir)) {
+				desiredDirIndex = i;
+			}
+		}
+		//test for possible tiles clockwise
+		for(int i = desiredDirIndex+1; i < desiredDirIndex+3; i++) {
+			//wrap around the array
+			Direction testingDir = directions[i%directions.length];
+			if(rc.canMove(testingDir)) {
+				return testingDir;
+			}
+		}
+		
+		//test for possible tiles counter-clockwise
+		for(int i = desiredDirIndex-1; i > desiredDirIndex-3; i--) {
+			//wrap around the array
+			int testingIndex = i;
+			if(i < 0) {
+				testingIndex = i + directions.length;
+			}
+			Direction testingDir = directions[testingIndex];
+			if(rc.canMove(testingDir)) {
+				return testingDir;
+			}
+		}
+		//no path found
+		return null; 
+		//directions[(desiredDirIndex+4)%directions.length]
 	}
 }
