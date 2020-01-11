@@ -16,6 +16,7 @@ public strictfp class RobotPlayer {
 
 	// HQ
 	static int numMiners = 0;
+	static boolean builtRefinery = false;
 
 	// MINER
 	static MapLocation hqLoc;
@@ -108,11 +109,23 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 10) {
-			for (Direction dir : directions)
-				if (tryBuild(RobotType.MINER, dir)) {
-					numMiners++;
-				}
+		if(!builtRefinery) {
+			if (numMiners < 5) {
+				for (Direction dir : directions)
+					if (tryBuild(RobotType.MINER, dir)) {
+						numMiners++;
+					}
+			}
+		} else {
+			if (numMiners < 10) {
+				for (Direction dir : directions)
+					if (tryBuild(RobotType.MINER, dir)) {
+						numMiners++;
+					}
+			}
+		}
+		if(rc.getTeamSoup() >= 200) {
+			builtRefinery=true;
 		}
 	}
 
@@ -123,9 +136,14 @@ public strictfp class RobotPlayer {
 		// tryBlockchain();
 		// scan nearby area for the nearest soup location and save to a variable
 		nearbySoup();
-		// remove current soup target if the target is empty
-		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
-			soupLoc = null;
+
+		//building
+		if (soupLoc != null && 
+				rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && 
+				soupLoc.distanceSquaredTo(hqLoc) > 16 && 
+				nearbyRobot(RobotType.REFINERY) == null) {
+			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
+			tryBuild(RobotType.REFINERY, dirToSoup);
 		}
 
 		// refining and mining
@@ -150,6 +168,9 @@ public strictfp class RobotPlayer {
 		} else if (soupLoc != null) { // move towards saved soup location
 			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
 			desiredDir = dirToSoup;
+			if(rc.getLocation().add(desiredDir).equals(soupLoc)) {//if next to soup do not move
+				desiredDir = Direction.CENTER;
+			}
 		} else {
 			//make this shit better
 			desiredDir = randomDirection();
@@ -358,6 +379,10 @@ public strictfp class RobotPlayer {
 				}
 			}
 		}
+		// remove current soup target if the target is empty
+		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
+			soupLoc = null;
+		}
 	}
 
 	static MapLocation l(int x, int y) {
@@ -384,26 +409,26 @@ public strictfp class RobotPlayer {
 			}
 		}
 		//test for possible tiles clockwise
-		for(int i = desiredDirIndex+1; i < desiredDirIndex+3; i++) {
+		for(int i = desiredDirIndex+1; i < desiredDirIndex+4; i++) {
 			//wrap around the array
 			Direction testingDir = directions[i%directions.length];
-			if(rc.canMove(testingDir)) {
+			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
 				return testingDir;
 			}
 		}
 		
-		//test for possible tiles counter-clockwise
-		for(int i = desiredDirIndex-1; i > desiredDirIndex-3; i--) {
-			//wrap around the array
-			int testingIndex = i;
-			if(i < 0) {
-				testingIndex = i + directions.length;
-			}
-			Direction testingDir = directions[testingIndex];
-			if(rc.canMove(testingDir)) {
-				return testingDir;
-			}
-		}
+//		//test for possible tiles counter-clockwise
+//		for(int i = desiredDirIndex-1; i > desiredDirIndex-3; i--) {
+//			//wrap around the array
+//			int testingIndex = i;
+//			if(i < 0) {
+//				testingIndex = i + directions.length;
+//			}
+//			Direction testingDir = directions[testingIndex];
+//			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
+//				return testingDir;
+//			}
+//		}
 		//no path found
 		return null; 
 		//directions[(desiredDirIndex+4)%directions.length]
