@@ -148,7 +148,7 @@ public strictfp class RobotPlayer {
 		System.out.println(builtBuilderMiner);
 		if(rc.getRoundNum()>100 && !builtBuilderMiner) {
 			
-			if(tryBuild(RobotType.MINER, Direction.EAST)) {
+			if(tryBuild(RobotType.MINER, Direction.NORTH)) {
 				builtBuilderMiner = true;
 			}
 		}
@@ -242,10 +242,12 @@ public strictfp class RobotPlayer {
 	static void runBuilderMiner() throws GameActionException {
 		findHQ();
 		if(rc.getLocation().isWithinDistanceSquared(hqLoc, 3)) {
-			tryMove(Direction.EAST);
+			tryMove(Direction.NORTH);
 		}else {
-			tryBuild(RobotType.DESIGN_SCHOOL,Direction.EAST);
-			minerType = SOUP_MINER;
+			tryBuild(RobotType.DESIGN_SCHOOL,Direction.NORTH);
+			if(tryBuild(RobotType.FULFILLMENT_CENTER,Direction.NORTHWEST)) {
+				minerType = SOUP_MINER;
+			}
 		}
 	}
 
@@ -266,8 +268,10 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runFulfillmentCenter() throws GameActionException {
+		if(rc.getRoundNum()>200) {
 		for (Direction dir : directions)
 			tryBuild(RobotType.DELIVERY_DRONE, dir);
+		}
 	}
 
 	static void runLandscaper() throws GameActionException {
@@ -295,21 +299,18 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDeliveryDrone() throws GameActionException {
-		Team enemy = rc.getTeam().opponent();
-		if (!rc.isCurrentlyHoldingUnit()) {
-			// See if there are any enemy robots within striking range (distance 1 from
-			// lumberjack's radius)
-			RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
-
-			if (robots.length > 0) {
-				// Pick up a first robot within range
-				rc.pickUpUnit(robots[0].getID());
-				System.out.println("I picked up " + robots[0].getID() + "!");
+		findHQ();
+		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+		Direction des = dirToHQ; 
+			if (rc.canMove(des))
+				rc.move(des);
+			else {
+				des = bugPathing(des);
+				if (des != null) {
+					rc.move(des);
+				}
 			}
-		} else {
-			// No close robots, so search for robots within sight radius
-			tryMove(randomDirection());
-		}
+		
 	}
 
 	static void runNetGun() throws GameActionException {
