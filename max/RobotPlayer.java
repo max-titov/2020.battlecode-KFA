@@ -27,6 +27,7 @@ public strictfp class RobotPlayer {
 	// HQ
 	static int numMiners = 0;
 	static boolean builtRefinery = false;
+	static boolean builtBuilderMiner = false;
 
 	// MINER
 	static final int SOUP_CODE = 804;
@@ -44,6 +45,10 @@ public strictfp class RobotPlayer {
 	static Direction preferedDir;
 	static MapLocation globalSoupLoc;
 	static MapLocation randomLoc;
+	
+	static final int SOUP_MINER = 1;
+	static final int BUILDER_MINER = 2;
+	static int minerType;
 	
 	// REFINERY
 
@@ -141,12 +146,34 @@ public strictfp class RobotPlayer {
 					}
 			}
 		}
+		if(rc.getRoundNum()>300 && builtBuilderMiner) {
+			if(tryBuild(RobotType.MINER, Direction.EAST))
+				builtBuilderMiner = true;
+		}
 		if(rc.getTeamSoup() >= 200) {
 			builtRefinery=true;
 		}
 	}
-
 	static void runMiner() throws GameActionException {
+		if(minerType == 0) {
+			if(rc.getRoundNum() < 300) {
+				minerType = SOUP_MINER;
+			}
+			else {
+				minerType = BUILDER_MINER;
+			}
+		}
+		switch(minerType) {
+		case SOUP_MINER:
+			runSoupMiner();
+			break;
+		case BUILDER_MINER:
+			runBuilderMiner();
+			break;
+		}
+			
+	}
+	static void runSoupMiner() throws GameActionException {
 		findHQ();
 
 		RobotInfo[] nearbyBots = rc.senseNearbyRobots();
@@ -212,6 +239,19 @@ public strictfp class RobotPlayer {
 		for(int num :messages)
 			System.out.println(num);
 
+	}
+	
+	static void runBuilderMiner() throws GameActionException {
+		findHQ();
+		if(rc.getLocation().isWithinDistanceSquared(hqLoc, 3)) {
+			tryMove(Direction.EAST);
+		}else {
+			tryBuild(RobotType.DESIGN_SCHOOL,Direction.EAST);
+			minerType = SOUP_MINER;
+		}
+		if(rc.getRoundNum()>350) {
+			minerType = SOUP_MINER;
+		}
 	}
 
 	static void runRefinery() throws GameActionException {
@@ -437,6 +477,19 @@ public strictfp class RobotPlayer {
 		}
 		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight().rotateRight();
+		}
+		else {
+			return null;
+		}
+		
+	}
+	
+	static Direction bugPathing2(Direction desiredDir) throws GameActionException {
+		if(canMoveInDir(desiredDir.rotateRight())) {
+			return desiredDir.rotateRight();
+		}
+		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+			return desiredDir.rotateRight().rotateRight();
 		}
 		else {
 			return null;
