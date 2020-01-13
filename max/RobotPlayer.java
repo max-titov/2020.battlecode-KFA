@@ -145,9 +145,12 @@ public strictfp class RobotPlayer {
 					}
 			}
 		}
+		System.out.println(builtBuilderMiner);
 		if(rc.getRoundNum()>100 && !builtBuilderMiner) {
-			if(tryBuild(RobotType.MINER, Direction.EAST))
+			
+			if(tryBuild(RobotType.MINER, Direction.EAST)) {
 				builtBuilderMiner = true;
+			}
 		}
 		if(rc.getTeamSoup() >= 200) {
 			builtRefinery=true;
@@ -233,10 +236,6 @@ public strictfp class RobotPlayer {
 				rc.move(desiredDir);
 			}
 		}
-		
-		int[] messages = getMessages();
-		for(int num :messages)
-			System.out.println(num);
 
 	}
 	
@@ -275,16 +274,17 @@ public strictfp class RobotPlayer {
 		findHQ();
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		Direction des = dirToHQ;
-		if(!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
-			if(rc.canMove(des))
+		if (!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
+			if (rc.canMove(des))
 				rc.move(des);
 			else {
 				des = bugPathing2(des);
-				if(des != null) {
+				if (des != null) {
 					rc.move(des);
 				}
 			}
-		}else {
+		}
+		else if(rc.getRoundNum() >= 247){
 			if(rc.getDirtCarrying()>0) {
 				rc.depositDirt(Direction.CENTER);
 			}else {
