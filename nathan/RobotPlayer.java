@@ -18,15 +18,21 @@ public strictfp class RobotPlayer {
 	// MINER
 	static MapLocation hqLoc;
 	static MapLocation soupLoc;
-	static MapLocation[][] visionCircles = {
-			{l(0,0)},
-			{l(-1,0),l(0,-1),l(1,0),l(0,1)},
-			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),l(-1,2),l(0,2),l(1,2),l(1,1),l(2,1),l(2,0),l(2,-1),l(1,-1),l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)},
-			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),l(-3,2),l(-2,2),l(-2,3),l(-1,3),l(0,3),l(1,3),l(2,3),l(2,2),l(3,2),l(3,1),l(3,0),l(3,-1),l(3,-2),l(2,-2),l(2,-3),l(1,-3),l(0,-3),l(-1,-3),l(-2,-3),l(-2,-2)},
-			{l(-4,-2),l(-4,-1),l(-4,0),l(-4,1),l(-4,2),l(-3,3),l(-2,4),l(-1,4),l(0,4),l(1,4),l(2,4),l(3,3),l(4,2),l(4,1),l(4,0),l(4,-1),l(4,-2),l(3,-3),l(2,-4),l(1,-4),l(0,-4),l(-1,-4),l(-2,-4),l(-3,-3)},
-			{l(-5,-3),l(-5,-2),l(-5,-1),l(-5,0),l(-5,1),l(-5,2),l(-5,3),l(-4,3),l(-4,4),l(-3,4),l(-3,5),l(-2,5),l(-1,5),l(0,5),l(1,5),l(2,5),l(3,5),l(3,4),l(4,4),l(4,3),l(5,3),l(5,2),l(5,1),l(5,0),l(5,-1),l(5,-2),l(5,-3),l(4,-3),l(4,-4),l(3,-4),l(3,-5),l(2,-5),l(1,-5),l(0,-5),l(-1,-5),l(-2,-5),l(-3,-5),l(-3,-4),l(-4,-4),l(-4,-3)},
-			{l(0,0)}
-	};
+	static MapLocation[][] visionCircles = { { l(0, 0) }, { l(-1, 0), l(0, -1), l(1, 0), l(0, 1) },
+			{ l(-2, -1), l(-2, 0), l(-2, 1), l(-1, 1), l(-1, 2), l(0, 2), l(1, 2), l(1, 1), l(2, 1), l(2, 0), l(2, -1),
+					l(1, -1), l(1, -2), l(0, -2), l(-1, -2), l(-1, -1) },
+			{ l(-3, -2), l(-3, -1), l(-3, 0), l(-3, 1), l(-3, 2), l(-2, 2), l(-2, 3), l(-1, 3), l(0, 3), l(1, 3),
+					l(2, 3), l(2, 2), l(3, 2), l(3, 1), l(3, 0), l(3, -1), l(3, -2), l(2, -2), l(2, -3), l(1, -3),
+					l(0, -3), l(-1, -3), l(-2, -3), l(-2, -2) },
+			{ l(-4, -2), l(-4, -1), l(-4, 0), l(-4, 1), l(-4, 2), l(-3, 3), l(-2, 4), l(-1, 4), l(0, 4), l(1, 4),
+					l(2, 4), l(3, 3), l(4, 2), l(4, 1), l(4, 0), l(4, -1), l(4, -2), l(3, -3), l(2, -4), l(1, -4),
+					l(0, -4), l(-1, -4), l(-2, -4), l(-3, -3) },
+			{ l(-5, -3), l(-5, -2), l(-5, -1), l(-5, 0), l(-5, 1), l(-5, 2), l(-5, 3), l(-4, 3), l(-4, 4), l(-3, 4),
+					l(-3, 5), l(-2, 5), l(-1, 5), l(0, 5), l(1, 5), l(2, 5), l(3, 5), l(3, 4), l(4, 4), l(4, 3),
+					l(5, 3), l(5, 2), l(5, 1), l(5, 0), l(5, -1), l(5, -2), l(5, -3), l(4, -3), l(4, -4), l(3, -4),
+					l(3, -5), l(2, -5), l(1, -5), l(0, -5), l(-1, -5), l(-2, -5), l(-3, -5), l(-3, -4), l(-4, -4),
+					l(-4, -3) },
+			{ l(0, 0) } };
 	static final int SOUP_MINER = 1;
 	static final int BUILDER_MINER = 2;
 	static int minerType;
@@ -115,7 +121,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if(!builtRefinery) {
+		if (!builtRefinery) {
 			if (numMiners < 5) {
 				for (Direction dir : directions)
 					if (tryBuild(RobotType.MINER, dir)) {
@@ -130,25 +136,24 @@ public strictfp class RobotPlayer {
 					}
 			}
 		}
-		if(rc.getRoundNum()>150 && !builtBuilderMiner) {
-			if(tryBuild(RobotType.MINER, Direction.EAST))
+		if (rc.getRoundNum() > 150 && !builtBuilderMiner) {
+			if (tryBuild(RobotType.MINER, Direction.EAST))
 				builtBuilderMiner = true;
 		}
-		if(rc.getTeamSoup() >= 200) {
-			builtRefinery=true;
+		if (rc.getTeamSoup() >= 200) {
+			builtRefinery = true;
 		}
 	}
-	
+
 	static void runMiner() throws GameActionException {
-		if(minerType == 0) {
-			if(rc.getRoundNum() < 150) {
+		if (minerType == 0) {
+			if (rc.getRoundNum() < 150) {
 				minerType = SOUP_MINER;
-			}
-			else {
+			} else {
 				minerType = BUILDER_MINER;
 			}
 		}
-		switch(minerType) {
+		switch (minerType) {
 		case SOUP_MINER:
 			runSoupMiner();
 			break;
@@ -156,8 +161,9 @@ public strictfp class RobotPlayer {
 			runBuilderMiner();
 			break;
 		}
-			
+
 	}
+
 	static void runSoupMiner() throws GameActionException {
 		findHQ();
 
@@ -166,24 +172,19 @@ public strictfp class RobotPlayer {
 		// tryBlockchain();
 		// scan nearby area for the nearest soup location and save to a variable
 		nearbySoup();
-		
-		
-		
-		//building
-		if (soupLoc != null && 
-				rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && 
-				soupLoc.distanceSquaredTo(hqLoc) > 16 && 
-				nearbyRobot(RobotType.REFINERY) == null) {
+
+		// building
+		if (soupLoc != null && rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && soupLoc.distanceSquaredTo(hqLoc) > 16
+				&& nearbyRobot(RobotType.REFINERY) == null) {
 			Direction dirToSoup = currentLoc.directionTo(soupLoc);
 			tryBuild(RobotType.REFINERY, dirToSoup);
 		}
 
 		// refining and mining
-		for (int i = 0; i< allDirsLen; i++)
+		for (int i = 0; i < allDirsLen; i++)
 			tryMine(allDirs[i]);
-		for (int i = 0; i< allDirsLen; i++)
+		for (int i = 0; i < allDirsLen; i++)
 			tryRefine(allDirs[i]);
-		
 
 		// where to move
 		Direction desiredDir; // where the miner WANTS to go
@@ -206,36 +207,36 @@ public strictfp class RobotPlayer {
 //				sendMessage(m, 1);
 //			}
 		} else {
-			//make this shit better
+			// make this shit better
 			desiredDir = randomDirection();
 		}
-		
-		if(rc.canMove(desiredDir)) {
+
+		if (rc.canMove(desiredDir)) {
 			rc.move(desiredDir);
 		} else {
 			// bug pathfinding
 			desiredDir = bugPathing(desiredDir);
-			if(desiredDir != null) {
+			if (desiredDir != null) {
 				rc.move(desiredDir);
 			}
 		}
-		
+
 		int[] messages = getMessages();
-		for(int num :messages)
+		for (int num : messages)
 			System.out.println(num);
 
 	}
-	
+
 	static void runBuilderMiner() throws GameActionException {
 		findHQ();
-		if(rc.getLocation().isWithinDistanceSquared(hqLoc, 3)) {
+		if (rc.getLocation().isWithinDistanceSquared(hqLoc, 3)) {
 			tryMove(Direction.EAST);
-		}else {
-			tryBuild(RobotType.DESIGN_SCHOOL,Direction.EAST);
+		} else {
+			tryBuild(RobotType.DESIGN_SCHOOL, Direction.EAST);
 			minerType = SOUP_MINER;
 		}
 	}
-	
+
 	static void runRefinery() throws GameActionException {
 		// System.out.println("Pollution: " + rc.sensePollution(rc.getLocation()));
 	}
@@ -246,7 +247,7 @@ public strictfp class RobotPlayer {
 
 	static void runDesignSchool() throws GameActionException {
 		Direction dir = randomDirection();
-		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount < 8) {
+		if (rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount < 8) {
 			tryBuild(RobotType.LANDSCAPER, dir);
 			landscaperCount++;
 		}
@@ -258,19 +259,26 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runLandscaper() throws GameActionException {
+		findHQ();
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		Direction des = dirToHQ;
-		if(!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
-			if(rc.canMove(des))
+		if (!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
+			if (rc.canMove(des))
 				rc.move(des);
 			else {
 				des = bugPathing2(des);
-				if(des != null) {
+				if (des != null) {
 					rc.move(des);
 				}
 			}
 		}
-		
+		else if(rc.getRoundNum() >= 247){
+			if(rc.getDirtCarrying()>0) {
+				rc.depositDirt(Direction.CENTER);
+			}else {
+				rc.digDirt(dirToHQ.opposite());
+			}
+		}
 	}
 
 	static void runDeliveryDrone() throws GameActionException {
@@ -402,7 +410,7 @@ public strictfp class RobotPlayer {
 		} else
 			return false;
 	}
-    
+
 	static void tryBlockchain() throws GameActionException {
 		if (turnCount < 3) {
 			int[] message = new int[7];
@@ -462,67 +470,62 @@ public strictfp class RobotPlayer {
 		}
 		return null;
 	}
-	
+
 	static boolean canMoveInDir(Direction dir) throws GameActionException {
-		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+		if (rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
 			return true;
 		}
 		return false;
 	}
-	
+
 	static Direction bugPathing(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
+		if (canMoveInDir(desiredDir.rotateRight())) {
 			return desiredDir.rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+		} else if (canMoveInDir(desiredDir.rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
+		} else if (canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight().rotateRight();
-		}
-		else {
+		} else {
 			return null;
 		}
-		
+
 	}
-	
+
 	static Direction bugPathing2(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
+		if (canMoveInDir(desiredDir.rotateRight())) {
 			return desiredDir.rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+		} else if (canMoveInDir(desiredDir.rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight();
-		}
-		else {
+		} else {
 			return null;
 		}
-		
+
 	}
-	
+
 	static int[] getMessages() throws GameActionException {
-		int[] messages = new int[28]; //4 per message 7 messages
-		Transaction[] transactions = rc.getBlock(rc.getRoundNum()-1);
+		int[] messages = new int[28]; // 4 per message 7 messages
+		Transaction[] transactions = rc.getBlock(rc.getRoundNum() - 1);
 		int len = transactions.length;
-		for(int i = 0; i < len; i++) {
-			if(transactions[i]==null)
+		for (int i = 0; i < len; i++) {
+			if (transactions[i] == null)
 				return messages;
 			int[] m = transactions[i].getMessage();
-			if(m[0]+m[1]-m[6] == KEY) {
-				for (int j = 0; j<4; j++) {
-					messages[i*4+j] = m[j+2];
+			if (m[0] + m[1] - m[6] == KEY) {
+				for (int j = 0; j < 4; j++) {
+					messages[i * 4 + j] = m[j + 2];
 				}
 			}
 		}
 		return messages;
 	}
-	
+
 	static void sendMessage(int[] m, int cost) throws GameActionException {
-		int int6 = (int)(Math.random()*KEY);
-		int int1 = (int)(Math.random()*(KEY+int6-1));
-		int int0 = KEY+int6-int1;
-		//System.out.println(int0+"+"+int1+"-"+int6);
-		int[] message = {int0,int1,m[0],m[1],m[2],m[3],int6};
-		if(rc.canSubmitTransaction(message, cost)) {
+		int int6 = (int) (Math.random() * KEY);
+		int int1 = (int) (Math.random() * (KEY + int6 - 1));
+		int int0 = KEY + int6 - int1;
+		// System.out.println(int0+"+"+int1+"-"+int6);
+		int[] message = { int0, int1, m[0], m[1], m[2], m[3], int6 };
+		if (rc.canSubmitTransaction(message, cost)) {
 			rc.submitTransaction(message, cost);
 		}
 	}
