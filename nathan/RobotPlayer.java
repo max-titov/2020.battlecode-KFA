@@ -157,8 +157,7 @@ public strictfp class RobotPlayer {
 		// if full capacity find refinery
 		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
 			RobotInfo refinery = nearbyRobot(RobotType.REFINERY);
-			int dist = rc.getLocation().distanceSquaredTo(hqLoc);
-			if(nearbyRobot(RobotType.DESIGN_SCHOOL) == null && dist <= 20 && dist >= 4) {
+			if(nearbyRobot(RobotType.DESIGN_SCHOOL) == null) {
 				tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
 			}
 			if (refinery != null) { // if there is a nearby refinery go there
@@ -202,7 +201,7 @@ public strictfp class RobotPlayer {
 
 	static void runDesignSchool() throws GameActionException {
 		Direction dir = randomDirection();
-		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount < 8) {
+		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount <2) {
 			tryBuild(RobotType.LANDSCAPER, dir);
 			landscaperCount++;
 		}
@@ -214,14 +213,13 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runLandscaper() throws GameActionException {
-		findHQ();
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		System.out.println(dirToHQ);
 		Direction des = dirToHQ;
 		if(rc.canMove(des))
 			rc.canMove(des);
 		else {
-			des = bugPathing2(des);
+			des = bugPathing(des);
 			if(des != null) {
 				rc.move(des);
 			}
@@ -357,7 +355,7 @@ public strictfp class RobotPlayer {
 		} else
 			return false;
 	}
-    
+
 	static void tryBlockchain() throws GameActionException {
 		if (turnCount < 3) {
 			int[] message = new int[7];
@@ -418,39 +416,38 @@ public strictfp class RobotPlayer {
 		return null;
 	}
 	
-	static boolean canMoveInDir(Direction dir) throws GameActionException {
-		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
-			return true;
-		}
-		return false;
-	}
-	
 	static Direction bugPathing(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
-			return desiredDir.rotateRight();
+		Direction result;
+		int desiredDirIndex = 0;
+		//find index of desired direction
+		for(int i = 0; i < directions.length; i++) {
+			if(directions[i].equals(desiredDir)) {
+				desiredDirIndex = i;
+			}
 		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
-			return desiredDir.rotateRight().rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
-			return desiredDir.rotateRight().rotateRight().rotateRight();
-		}
-		else {
-			return null;
-		}
-		
-	}
-	
-	static Direction bugPathing2(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
-			return desiredDir.rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
-			return desiredDir.rotateRight().rotateRight();
-		}
-		else {
-			return null;
+		//test for possible tiles clockwise
+		for(int i = desiredDirIndex+1; i < desiredDirIndex+4; i++) {
+			//wrap around the array
+			Direction testingDir = directions[i%directions.length];
+			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
+				return testingDir;
+			}
 		}
 		
+//		//test for possible tiles counter-clockwise
+//		for(int i = desiredDirIndex-1; i > desiredDirIndex-3; i--) {
+//			//wrap around the array
+//			int testingIndex = i;
+//			if(i < 0) {
+//				testingIndex = i + directions.length;
+//			}
+//			Direction testingDir = directions[testingIndex];
+//			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
+//				return testingDir;
+//			}
+//		}
+		//no path found
+		return null; 
+		//directions[(desiredDirIndex+4)%directions.length]
 	}
 }

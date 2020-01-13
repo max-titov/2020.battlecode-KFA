@@ -146,7 +146,7 @@ public strictfp class RobotPlayer {
 					}
 			}
 		}
-		if(rc.getRoundNum()>300 && builtBuilderMiner) {
+		if(rc.getRoundNum()>150 && !builtBuilderMiner) {
 			if(tryBuild(RobotType.MINER, Direction.EAST))
 				builtBuilderMiner = true;
 		}
@@ -156,7 +156,7 @@ public strictfp class RobotPlayer {
 	}
 	static void runMiner() throws GameActionException {
 		if(minerType == 0) {
-			if(rc.getRoundNum() < 300) {
+			if(rc.getRoundNum() < 150) {
 				minerType = SOUP_MINER;
 			}
 			else {
@@ -247,9 +247,6 @@ public strictfp class RobotPlayer {
 			tryMove(Direction.EAST);
 		}else {
 			tryBuild(RobotType.DESIGN_SCHOOL,Direction.EAST);
-			minerType = SOUP_MINER;
-		}
-		if(rc.getRoundNum()>350) {
 			minerType = SOUP_MINER;
 		}
 	}
