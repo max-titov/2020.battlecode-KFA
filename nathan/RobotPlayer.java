@@ -1,7 +1,5 @@
 package nathan;
 
-import java.util.ArrayList;
-
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -16,40 +14,35 @@ public strictfp class RobotPlayer {
 
 	// HQ
 	static int numMiners = 0;
+	static boolean builtRefinery = false;
 
 	// MINER
 	static MapLocation hqLoc;
 	static MapLocation soupLoc;
-	static MapLocation[][] visionCircles = { { l(0, 0) }, { l(-1, 0), l(0, -1), l(1, 0), l(0, 1) },
-			{ l(-2, -1), l(-2, 0), l(-2, 1), l(-1, 1), l(-1, 2), l(0, 2), l(1, 2), l(1, 1), l(2, 1), l(2, 0), l(2, -1),
-					l(1, -1), l(1, -2), l(0, -2), l(-1, -2), l(-1, -1) },
-			{ l(-3, -2), l(-3, -1), l(-3, 0), l(-3, 1), l(-3, 2), l(-2, 2), l(-2, 3), l(-1, 3), l(0, 3), l(1, 3),
-					l(2, 3), l(2, 2), l(3, 2), l(3, 1), l(3, 0), l(3, -1), l(3, -2), l(2, -2), l(2, -3), l(1, -3),
-					l(0, -3), l(-1, -3), l(-2, -3), l(-2, -2) },
-			{ l(-4, -2), l(-4, -1), l(-4, 0), l(-4, 1), l(-4, 2), l(-3, 3), l(-2, 4), l(-1, 4), l(0, 4), l(1, 4),
-					l(2, 4), l(3, 3), l(4, 2), l(4, 1), l(4, 0), l(4, -1), l(4, -2), l(3, -3), l(2, -4), l(1, -4),
-					l(0, -4), l(-1, -4), l(-2, -4), l(-3, -3) },
-			{ l(-5, -3), l(-5, -2), l(-5, -1), l(-5, 0), l(-5, 1), l(-5, 2), l(-5, 3), l(-4, 3), l(-4, 4), l(-3, 4),
-					l(-3, 5), l(-2, 5), l(-1, 5), l(0, 5), l(1, 5), l(2, 5), l(3, 5), l(3, 4), l(4, 4), l(4, 3),
-					l(5, 3), l(5, 2), l(5, 1), l(5, 0), l(5, -1), l(5, -2), l(5, -3), l(4, -3), l(4, -4), l(3, -4),
-					l(3, -5), l(2, -5), l(1, -5), l(0, -5), l(-1, -5), l(-2, -5), l(-3, -5), l(-3, -4), l(-4, -4),
-					l(-4, -3) },
-			{ l(0, 0) } };
-
+	static MapLocation[][] visionCircles = {
+			{l(0,0)},
+			{l(-1,0),l(0,-1),l(1,0),l(0,1)},
+			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),l(-1,2),l(0,2),l(1,2),l(1,1),l(2,1),l(2,0),l(2,-1),l(1,-1),l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)},
+			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),l(-3,2),l(-2,2),l(-2,3),l(-1,3),l(0,3),l(1,3),l(2,3),l(2,2),l(3,2),l(3,1),l(3,0),l(3,-1),l(3,-2),l(2,-2),l(2,-3),l(1,-3),l(0,-3),l(-1,-3),l(-2,-3),l(-2,-2)},
+			{l(-4,-2),l(-4,-1),l(-4,0),l(-4,1),l(-4,2),l(-3,3),l(-2,4),l(-1,4),l(0,4),l(1,4),l(2,4),l(3,3),l(4,2),l(4,1),l(4,0),l(4,-1),l(4,-2),l(3,-3),l(2,-4),l(1,-4),l(0,-4),l(-1,-4),l(-2,-4),l(-3,-3)},
+			{l(-5,-3),l(-5,-2),l(-5,-1),l(-5,0),l(-5,1),l(-5,2),l(-5,3),l(-4,3),l(-4,4),l(-3,4),l(-3,5),l(-2,5),l(-1,5),l(0,5),l(1,5),l(2,5),l(3,5),l(3,4),l(4,4),l(4,3),l(5,3),l(5,2),l(5,1),l(5,0),l(5,-1),l(5,-2),l(5,-3),l(4,-3),l(4,-4),l(3,-4),l(3,-5),l(2,-5),l(1,-5),l(0,-5),l(-1,-5),l(-2,-5),l(-3,-5),l(-3,-4),l(-4,-4),l(-4,-3)},
+			{l(0,0)}
+	};
+	
 	// REFINERY
-	static int refineryCount = 0;
+
 	// VAPORATOR
-	static int vaporatorCount = 0;
+
 	// DESIGN_SCHOOL
 	static int schoolCount = 0;
 	// FULFILLMENT_CENTER
-	static int fulfillmentCount = 0;
+
 	// LANDSCAPER
 	static int landscaperCount = 0;
 	// DELIVERY DRONE
-	static int droneCount = 0;
+
 	// NET_GUN
-	static int gunCount = 0;
+
 	/**
 	 * run() is the method that is called when a robot is instantiated in the
 	 * Battlecode world. If this method returns, the robot dies!
@@ -72,6 +65,7 @@ public strictfp class RobotPlayer {
 				// Here, we've separated the controls into a different method for each
 				// RobotType.
 				// You can add the missing ones or rewrite this into your own control structure.
+				findHQ();
 				switch (rc.getType()) {
 				case HQ:
 					runHQ();
@@ -114,58 +108,86 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 6) {
-			for (Direction dir : directions)
-				if (tryBuild(RobotType.MINER, dir)) {
-					numMiners++;
-				}
+		if(!builtRefinery) {
+			if (numMiners < 5) {
+				for (Direction dir : directions)
+					if (tryBuild(RobotType.MINER, dir)) {
+						numMiners++;
+					}
+			}
+		} else {
+			if (numMiners < 10) {
+				for (Direction dir : directions)
+					if (tryBuild(RobotType.MINER, dir)) {
+						numMiners++;
+					}
+			}
+		}
+		if(rc.getTeamSoup() >= 200) {
+			builtRefinery=true;
 		}
 	}
 
 	static void runMiner() throws GameActionException {
-		if (hqLoc == null) {
-			RobotInfo[] nearbyBots = rc.senseNearbyRobots();
-			for (RobotInfo bot : nearbyBots) {
-				if (bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
-					hqLoc = bot.location;
-				}
-			}
-		}
+		findHQ();
+
+		RobotInfo[] nearbyBots = rc.senseNearbyRobots();
 		// tryBlockchain();
+		// scan nearby area for the nearest soup location and save to a variable
 		nearbySoup();
-		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
-			soupLoc = null;
+
+		//building
+		if (soupLoc != null && 
+				rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && 
+				soupLoc.distanceSquaredTo(hqLoc) > 16 && 
+				nearbyRobot(RobotType.REFINERY) == null) {
+			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
+			tryBuild(RobotType.REFINERY, dirToSoup);
 		}
-		System.out.println(soupLoc);
+
+		// refining and mining
 		for (Direction dir : directions)
 			tryRefine(dir);
 		for (Direction dir : directions) {
-			if (tryMine(dir)) {
+			tryMine(dir);
+		}
+
+		// where to move
+		Direction desiredDir; // where the miner WANTS to go
+		// if full capacity find refinery
+		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
+			RobotInfo refinery = nearbyRobot(RobotType.REFINERY);
+			if(nearbyRobot(RobotType.DESIGN_SCHOOL) == null) {
+				tryBuild(RobotType.DESIGN_SCHOOL, randomDirection());
 			}
-		}
-		tryMove(randomDirection());
-		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit && refineryCount < 1) {
-			Direction direction = randomDirection();
-			if (rc.canBuildRobot(RobotType.REFINERY, direction)) {
-				tryBuild(RobotType.REFINERY, direction);
-				refineryCount += 1;
+			if (refinery != null) { // if there is a nearby refinery go there
+				Direction dirToRefinery = rc.getLocation().directionTo(refinery.location);
+				desiredDir = dirToRefinery;
+			} else { // go the hq
+				Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+				desiredDir = dirToHQ;
 			}
-		}
-		Direction direction = randomDirection();
-		if(rc.canBuildRobot(RobotType.DESIGN_SCHOOL, direction)&&schoolCount < 1) {
-			tryBuild(RobotType.DESIGN_SCHOOL, direction);
-			schoolCount += 1;
-		}
-		if (soupLoc != null) {
+		} else if (soupLoc != null) { // move towards saved soup location
 			Direction dirToSoup = rc.getLocation().directionTo(soupLoc);
-			tryMove(dirToSoup);
-		} else if (tryMove(randomDirection())) {
-			
-		} else {}
-			
-			// tryBuild(randomSpawnedByMiner(), randomDirection());
-			//for (Direction dir : directions)
-				//tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+			desiredDir = dirToSoup;
+			if(rc.getLocation().add(desiredDir).equals(soupLoc)) {//if next to soup do not move
+				desiredDir = Direction.CENTER;
+			}
+		} else {
+			//make this shit better
+			desiredDir = randomDirection();
+		}
+		
+		if(rc.canMove(desiredDir)) {
+			rc.move(desiredDir);
+		} else {
+			// bug pathfinding
+			desiredDir = bugPathing(desiredDir);
+			if(desiredDir != null) {
+				rc.move(desiredDir);
+			}else
+				rc.move(randomDirection());
+		}
 
 	}
 
@@ -179,9 +201,9 @@ public strictfp class RobotPlayer {
 
 	static void runDesignSchool() throws GameActionException {
 		Direction dir = randomDirection();
-		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir)&&landscaperCount < 1) {
+		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount <2) {
 			tryBuild(RobotType.LANDSCAPER, dir);
-			landscaperCount += 1;
+			landscaperCount++;
 		}
 	}
 
@@ -191,39 +213,16 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runLandscaper() throws GameActionException {
-		if (rc.getDirtCarrying() == 0) {
-			tryDig();
-		}
-
-		MapLocation bestPlaceToBuildWall = null;
-		// find best place to build
-		if (hqLoc != null) {
-			int lowestElevation = 9999999;
-			for (Direction dir : directions) {
-				MapLocation tileToCheck = hqLoc.add(dir);
-				if (rc.getLocation().distanceSquaredTo(tileToCheck) < 4
-						&& rc.canDepositDirt(rc.getLocation().directionTo(tileToCheck))) {
-					if (rc.senseElevation(tileToCheck) < lowestElevation) {
-						lowestElevation = rc.senseElevation(tileToCheck);
-						bestPlaceToBuildWall = tileToCheck;
-					}
-				}
+		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+		System.out.println(dirToHQ);
+		Direction des = dirToHQ;
+		if(rc.canMove(des))
+			rc.canMove(des);
+		else {
+			des = bugPathing(des);
+			if(des != null) {
+				rc.move(des);
 			}
-		}
-
-		if (Math.random() < 0.4) {
-			// build the wall
-			if (bestPlaceToBuildWall != null) {
-				rc.depositDirt(rc.getLocation().directionTo(bestPlaceToBuildWall));
-				System.out.println("building a wall");
-			}
-		}
-
-		// otherwise try to get to the hq
-		if (hqLoc != null) {
-			goTo(hqLoc);
-		} else {
-			tryMove(randomDirection());
 		}
 	}
 
@@ -249,6 +248,17 @@ public strictfp class RobotPlayer {
 
 	}
 
+	static void findHQ() throws GameActionException {
+		if (hqLoc == null) {
+			RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+			for (RobotInfo bot : nearbyBots) {
+				if (bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
+					hqLoc = bot.location;
+				}
+			}
+		}
+	}
+
 	/**
 	 * Returns a random Direction.
 	 *
@@ -265,15 +275,6 @@ public strictfp class RobotPlayer {
 	 */
 	static RobotType randomSpawnedByMiner() {
 		return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
-	}
-
-	static boolean tryDig() throws GameActionException {
-		Direction dir = randomDirection();
-		if (rc.canDigDirt(dir)) {
-			rc.digDirt(dir);
-			return true;
-		}
-		return false;
 	}
 
 	static boolean tryMove() throws GameActionException {
@@ -307,20 +308,6 @@ public strictfp class RobotPlayer {
 			return true;
 		} else
 			return false;
-	}
-
-	static boolean goTo(Direction dir) throws GameActionException {
-		Direction[] toTry = { dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(),
-				dir.rotateRight().rotateRight() };
-		for (Direction d : toTry) {
-			if (tryMove(d))
-				return true;
-		}
-		return false;
-	}
-
-	static boolean goTo(MapLocation destination) throws GameActionException {
-		return goTo(rc.getLocation().directionTo(destination));
 	}
 
 	/**
@@ -403,15 +390,64 @@ public strictfp class RobotPlayer {
 		for (int radius = 0; radius <= radiusInTiles; radius++) {
 			for (int i = 0; i < visionCircles[radius].length; i++) {
 				MapLocation loc = new MapLocation(x + visionCircles[radius][i].x, y + visionCircles[radius][i].y);
-				if (rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0) {
+				if (rc.canSenseLocation(loc) && rc.senseSoup(loc) > 0 && !rc.senseFlooding(loc)) {
 					soupLoc = loc;
 					return;
 				}
 			}
 		}
+		// remove current soup target if the target is empty
+		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
+			soupLoc = null;
+		}
 	}
 
 	static MapLocation l(int x, int y) {
 		return new MapLocation(x, y);
+	}
+
+	static RobotInfo nearbyRobot(RobotType target) throws GameActionException {
+		RobotInfo[] robots = rc.senseNearbyRobots();
+		for (RobotInfo r : robots) {
+			if (r.getType() == target) {
+				return r;
+			}
+		}
+		return null;
+	}
+	
+	static Direction bugPathing(Direction desiredDir) throws GameActionException {
+		Direction result;
+		int desiredDirIndex = 0;
+		//find index of desired direction
+		for(int i = 0; i < directions.length; i++) {
+			if(directions[i].equals(desiredDir)) {
+				desiredDirIndex = i;
+			}
+		}
+		//test for possible tiles clockwise
+		for(int i = desiredDirIndex+1; i < desiredDirIndex+4; i++) {
+			//wrap around the array
+			Direction testingDir = directions[i%directions.length];
+			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
+				return testingDir;
+			}
+		}
+		
+//		//test for possible tiles counter-clockwise
+//		for(int i = desiredDirIndex-1; i > desiredDirIndex-3; i--) {
+//			//wrap around the array
+//			int testingIndex = i;
+//			if(i < 0) {
+//				testingIndex = i + directions.length;
+//			}
+//			Direction testingDir = directions[testingIndex];
+//			if(rc.canMove(testingDir) && !rc.senseFlooding(rc.getLocation().add(testingDir))) {
+//				return testingDir;
+//			}
+//		}
+		//no path found
+		return null; 
+		//directions[(desiredDirIndex+4)%directions.length]
 	}
 }

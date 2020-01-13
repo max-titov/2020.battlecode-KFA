@@ -135,7 +135,6 @@ public strictfp class RobotPlayer {
         if(rc.getDirtCarrying() == 0){
             tryDig();
         }
-
         MapLocation bestPlaceToBuildWall = null;
         // find best place to build
         if(hqLoc != null) {
