@@ -7,6 +7,8 @@ public strictfp class RobotPlayer {
 
 	static Direction[] directions = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
 			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
+	static Direction[] directionsButEast = { Direction.NORTH, Direction.NORTHEAST, Direction.SOUTHEAST,
+			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 	static RobotType[] spawnedByMiner = { RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
 			RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN };
 	static int dirsLen = directions.length;
@@ -42,6 +44,7 @@ public strictfp class RobotPlayer {
 	static int numMiners = 0;
 	static boolean builtRefinery = false;
 	static boolean builtBuilderMiner = false;
+	static int directionCount = 0;
 	// REFINERY
 
 	// VAPORATOR
@@ -251,6 +254,11 @@ public strictfp class RobotPlayer {
 			tryBuild(RobotType.LANDSCAPER, dir);
 			landscaperCount++;
 		}
+		if (rc.getRoundNum() > 247 && landscaperCount < 21) {
+			tryBuild(RobotType.LANDSCAPER, directionsButEast[directionCount%directionsButEast.length]);
+			landscaperCount++;
+			directionCount++;
+		}
 	}
 
 	static void runFulfillmentCenter() throws GameActionException {
@@ -262,7 +270,8 @@ public strictfp class RobotPlayer {
 		findHQ();
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		Direction des = dirToHQ;
-		if (!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
+		int distance = rc.getLocation().distanceSquaredTo(hqLoc);
+		if (!(distance <= 2)) {
 			if (rc.canMove(des))
 				rc.move(des);
 			else {
@@ -271,12 +280,19 @@ public strictfp class RobotPlayer {
 					rc.move(des);
 				}
 			}
-		}
-		else if(rc.getRoundNum() >= 247){
-			if(rc.getDirtCarrying()>0) {
-				rc.depositDirt(Direction.CENTER);
+		} else if (rc.getRoundNum() >= 247 && distance <= 2) {
+			if (distance == 2) {
+				if (rc.getDirtCarrying() > 0) {
+					//rc.depositDirt(Direction.CENTER);
+				} else {
+					//rc.digDirt(dirToHQ.opposite().rotateRight().rotateRight());
+				}
 			}else {
-				rc.digDirt(dirToHQ.opposite());
+				if(rc.getDirtCarrying() > 0) {
+					//rc.depositDirt(Direction.CENTER);
+				} else {
+					//rc.digDirt(dirToHQ.opposite());
+				}
 			}
 		}
 	}
