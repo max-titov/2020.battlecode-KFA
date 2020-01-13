@@ -1,7 +1,5 @@
 package max;
 
-import java.util.ArrayList;
-
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -55,6 +53,7 @@ public strictfp class RobotPlayer {
 	// VAPORATOR
 
 	// DESIGN_SCHOOL
+	static int landscaperCount;
 
 	// FULFILLMENT_CENTER
 
@@ -146,7 +145,7 @@ public strictfp class RobotPlayer {
 					}
 			}
 		}
-		if(rc.getRoundNum()>150 && !builtBuilderMiner) {
+		if(rc.getRoundNum()>100 && !builtBuilderMiner) {
 			if(tryBuild(RobotType.MINER, Direction.EAST))
 				builtBuilderMiner = true;
 		}
@@ -156,7 +155,7 @@ public strictfp class RobotPlayer {
 	}
 	static void runMiner() throws GameActionException {
 		if(minerType == 0) {
-			if(rc.getRoundNum() < 150) {
+			if(rc.getRoundNum() < 100) {
 				minerType = SOUP_MINER;
 			}
 			else {
@@ -260,7 +259,11 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDesignSchool() throws GameActionException {
-
+		Direction dir = randomDirection();
+		if(rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount < 8) {
+			tryBuild(RobotType.LANDSCAPER, dir);
+			landscaperCount++;
+		}
 	}
 
 	static void runFulfillmentCenter() throws GameActionException {
@@ -269,7 +272,26 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runLandscaper() throws GameActionException {
-
+		findHQ();
+		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+		Direction des = dirToHQ;
+		if(!(rc.getLocation().distanceSquaredTo(hqLoc) <= 2)) {
+			if(rc.canMove(des))
+				rc.move(des);
+			else {
+				des = bugPathing2(des);
+				if(des != null) {
+					rc.move(des);
+				}
+			}
+		}else {
+			if(rc.getDirtCarrying()>0) {
+				rc.depositDirt(Direction.CENTER);
+			}else {
+				rc.digDirt(dirToHQ.opposite());
+			}
+		}
+		
 	}
 
 	static void runDeliveryDrone() throws GameActionException {
