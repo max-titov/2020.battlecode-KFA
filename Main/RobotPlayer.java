@@ -1,7 +1,6 @@
 package Main;
 
 import battlecode.common.*;
-import max.RobotPlayer;
 
 public strictfp class RobotPlayer {
 	static RobotController rc;
@@ -127,13 +126,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		for (RobotInfo ri : rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())) {
-			if (rc.canShootUnit(ri.getID())) {
-				rc.shootUnit(ri.getID());
-			} else {
-				System.out.println(rc.getCooldownTurns());
-			}
-		}
+		
 	}
 
 	static void runMiner() throws GameActionException {
@@ -167,11 +160,6 @@ public strictfp class RobotPlayer {
 	static void runNetGun() throws GameActionException {
 
 	}
-
-	static void findHQ() throws GameActionException {
-
-	}
-
 	/**
 	 * Returns a random Direction.
 	 *
