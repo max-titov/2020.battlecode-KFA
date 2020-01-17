@@ -448,18 +448,6 @@ public strictfp class RobotPlayer {
 			return false;
 	}
 
-	static void tryBlockchain() throws GameActionException {
-		if (turnCount < 3) {
-			int[] message = new int[7];
-			for (int i = 0; i < 7; i++) {
-				message[i] = 123;
-			}
-			if (rc.canSubmitTransaction(message, 10))
-				rc.submitTransaction(message, 10);
-		}
-		// System.out.println(rc.getRoundMessages(turnCount-1));
-	}
-
 	/**
 	 * 
 	 * @return the current radius in tiles
@@ -547,8 +535,12 @@ public strictfp class RobotPlayer {
 	}
 	
 	static int[] getMessages() throws GameActionException {
+		return getMessages(rc.getRoundNum()-1);
+	}
+	
+	static int[] getMessages(int roundNum) throws GameActionException {
 		int[] messages = new int[28]; //4 per message 7 messages
-		Transaction[] transactions = rc.getBlock(rc.getRoundNum()-1);
+		Transaction[] transactions = rc.getBlock(roundNum);
 		int len = transactions.length;
 		for(int i = 0; i < len; i++) {
 			if(transactions[i]==null)

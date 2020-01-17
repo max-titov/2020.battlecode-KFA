@@ -1,7 +1,6 @@
 package Main;
 
 import battlecode.common.*;
-import max.RobotPlayer;
 
 public strictfp class RobotPlayer {
 	static RobotController rc;
