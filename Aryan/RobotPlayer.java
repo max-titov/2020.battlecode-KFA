@@ -13,6 +13,12 @@ public strictfp class RobotPlayer {
 	static int turnCount;
 	static MapLocation hqLoc;
 	static MapLocation enemyHQLoc;
+	static int mapCorner;
+	static final int QUADRANT1 = 1;
+	static final int QUADRANT2 = 2;
+	static final int QUADRANT3 = 3;
+	static final int QUADRANT4 = 4;
+
 
 	// HQ
 
@@ -25,7 +31,8 @@ public strictfp class RobotPlayer {
 	// DESIGN_SCHOOL
 
 	// FULFILLMENT_CENTER
-
+	static Direction[] directionsToBuild = null;
+	static int directionIndex;
 	// LANDSCAPER
 
 	// DELIVERY DRONE
@@ -34,7 +41,8 @@ public strictfp class RobotPlayer {
 	static int droneType;
 	static Direction heading;
 	static MapLocation targetLoc;
-
+	static boolean readyAttack;
+	static MapLocation fulfillmentLoc;
 	// NET_GUN
 
 	/**
@@ -75,12 +83,14 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
+		hqLoc = rc.getLocation();
+		if(mapCorner == 0) {
+			findCorner();
+		}
 		// Shoots Net Gun if HQ detects drone and is able to shoot
 		for (RobotInfo ri : rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())) {
 			if (rc.canShootUnit(ri.getID())) {
 				rc.shootUnit(ri.getID());
-			} else {
-				System.out.println(rc.getCooldownTurns());
 			}
 		}
 	}
@@ -102,7 +112,36 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runFulfillmentCenter() throws GameActionException {
+		//TODO: get hq coordinates from blockchain
+		findCorner();
+		if(directionsToBuild == null) {
+			directionsToBuild = new Direction[3];
+			switch (mapCorner) {
+			case QUADRANT1:
+				directionsToBuild[0] = Direction.WEST;
+				directionsToBuild[1] = Direction.SOUTHWEST;
+				directionsToBuild[2] = Direction.SOUTH;
+				break;
+			case QUADRANT2:
+				directionsToBuild[0] = Direction.EAST;
+				directionsToBuild[1] = Direction.SOUTHEAST;
+				directionsToBuild[2] = Direction.SOUTH;
+				break;
+			case QUADRANT3:
+				directionsToBuild[0] = Direction.NORTH;
+				directionsToBuild[1] = Direction.NORTHEAST;
+				directionsToBuild[2] = Direction.EAST;
+				break;
+			case QUADRANT4:
+				directionsToBuild[0] = Direction.WEST;
+				directionsToBuild[1] = Direction.NORTHWEST;
+				directionsToBuild[2] = Direction.NORTH;
+				break;
 
+			}
+		}
+		tryBuild(RobotType.DELIVERY_DRONE, directionsToBuild[directionIndex]);
+		directionIndex = directionIndex<2 ? directionIndex+1 : 0;
 	}
 
 	static void runLandscaper() throws GameActionException {
@@ -110,8 +149,10 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDeliveryDrone() throws GameActionException {
+		//TODO: check block chain for hq coordinates
+		//TODO: check block chain for enemy location
 		if (droneType == 0) {
-			if (rc.getRoundNum() < 100) {
+			if (enemyHQLoc == null) {
 				droneType = SCOUT_DRONE;
 			} else {
 				droneType = ATTACK_DRONE;
@@ -128,14 +169,16 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runScoutDeliveryDrone() throws GameActionException {
+		MapLocation current = rc.getLocation();
+		int currentRadius = rc.getCurrentSensorRadiusSquared();
 		if(enemyHQLoc == null) {
 			findScoutHeading();
 			findTargetLocation();
-			if(!rc.getLocation().isWithinDistanceSquared(targetLoc, 35)) {
-				tryMove(heading);
+			if(!current.isWithinDistanceSquared(targetLoc, currentRadius)) {
+				tryMove(current.directionTo(targetLoc));
 			}
 			else {
-				for(RobotInfo ri:rc.senseNearbyRobots(35, rc.getTeam().opponent())) {
+				for(RobotInfo ri:rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
 					if(ri.getType() == RobotType.HQ) {
 						enemyHQLoc = ri.getLocation();
 						//TODO: Broadcast to block chain
@@ -143,10 +186,13 @@ public strictfp class RobotPlayer {
 				}
 			}
 		}
+		else {
+			droneType = ATTACK_DRONE;
+		}
 	}
 
 	static void runAttackDeliveryDrone() throws GameActionException {
-
+		//if(enemyHQ)
 	}
 
 	static void runNetGun() throws GameActionException {
@@ -262,25 +308,57 @@ public strictfp class RobotPlayer {
 		// System.out.println(rc.getRoundMessages(turnCount-1));
 	}
 
+	static void findCorner() throws GameActionException {
+		int myX = hqLoc.x;
+		int myY = hqLoc.y;
+		boolean mapHeightLarger = rc.getMapHeight()/2 > myY;
+		boolean mapWidthLarger = rc.getMapWidth()/2 > myX;
+		if(mapHeightLarger) {
+			if(mapWidthLarger) {
+				mapCorner = QUADRANT3;
+			}
+			else {
+				mapCorner = QUADRANT4;
+			}
+		}
+		else {
+			if(mapWidthLarger) {
+				mapCorner = QUADRANT2;
+			}
+			else {
+				mapCorner = QUADRANT1;
+			}
+		}
+	}
+
 	static void findHQ() throws GameActionException { //Tries to find HQ location
-		if (hqLoc == null) {
+		if(hqLoc == null) {
 			for (RobotInfo bot : rc.senseNearbyRobots()) {
-				if (bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
+				if(bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
 					hqLoc = bot.location;
+				}
+			}
+		}
+	}
+	
+	static void findFulfillmentCenter() throws GameActionException {
+		if(fulfillmentLoc == null) {
+			for (RobotInfo bot : rc.senseNearbyRobots()) {
+				if(bot.type == RobotType.FULFILLMENT_CENTER && bot.team == rc.getTeam()) {
+					fulfillmentLoc = bot.location;
 				}
 			}
 		}
 	}
 
 	static void findScoutHeading() throws GameActionException {
-		findHQ();
 		if(hqLoc != null && heading == null) {
 			int myX = rc.getLocation().x;
 			int myY = rc.getLocation().y;
-			boolean xCheck = myX == hqLoc.x;
-			boolean yCheck = myY == hqLoc.y;
-			boolean xGreaterCheck = myX > hqLoc.x;
-			boolean yGreaterCheck = myY > hqLoc.y;
+			boolean xCheck = myX == fulfillmentLoc.x;
+			boolean yCheck = myY == fulfillmentLoc.y;
+			boolean xGreaterCheck = myX > fulfillmentLoc.x;
+			boolean yGreaterCheck = myY > fulfillmentLoc.y;
 			if(xGreaterCheck) {
 				if(yGreaterCheck) {
 					heading = Direction.NORTHEAST;
