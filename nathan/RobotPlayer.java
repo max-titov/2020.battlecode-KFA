@@ -46,7 +46,6 @@ public strictfp class RobotPlayer {
 	static int numMiners = 0;
 	static boolean builtRefinery = false;
 	static boolean builtBuilderMiner = false;
-	static int directionCount = 0;
 	// REFINERY
 
 	// VAPORATOR
@@ -250,17 +249,24 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDesignSchool() throws GameActionException {
-		Direction dir = randomDirection();
-		if (rc.canBuildRobot(RobotType.LANDSCAPER, dir) && landscaperCount < 8) {
-			tryBuild(RobotType.LANDSCAPER, dir);
-			landscaperCount++;
-		}
-
-		dir = directionsButWest[directionCount % directionsButEast.length];
-		if (rc.getRoundNum() > 247 && rc.canBuildRobot(RobotType.LANDSCAPER, dir)) {
-			tryBuild(RobotType.LANDSCAPER, dir);
-			landscaperCount++;
-			directionCount++;
+		Direction dir;
+		if (landscaperCount < 8) {
+			for (int directionCount = 0; directionCount < directionsButWest.length; directionCount++) {
+				dir = directionsButWest[directionCount % directionsButEast.length];
+				if (rc.canBuildRobot(RobotType.LANDSCAPER, dir)) {
+					tryBuild(RobotType.LANDSCAPER, dir);
+					landscaperCount++;
+				}
+			}
+		} else if (rc.getRoundNum() > 220 && landscaperCount < 21) {
+			for (int directionCount = 0; directionCount < directionsButWest.length; directionCount++) {
+				dir = directionsButWest[directionCount % directionsButEast.length];
+				if (rc.canBuildRobot(RobotType.LANDSCAPER, dir)) {
+					tryBuild(RobotType.LANDSCAPER, dir);
+					landscaperCount++;
+					break;
+				}
+			}
 		}
 	}
 
@@ -271,7 +277,7 @@ public strictfp class RobotPlayer {
 
 	static void runLandscaper() throws GameActionException {
 		if (landscaperType == 0) {
-			if (rc.getRoundNum() < 247) {
+			if (rc.getRoundNum() < 220) {
 				landscaperType = INNER;
 			} else {
 				landscaperType = OUTER;
@@ -303,7 +309,7 @@ public strictfp class RobotPlayer {
 					rc.move(des);
 				}
 			}
-		} else if (rc.getRoundNum() >= 247 && distance <= 2) {
+		} else if (rc.getRoundNum() >= 220 && distance <= 2) {
 			if (distance == 2) {
 				if (rc.getDirtCarrying() > 0) {
 					rc.depositDirt(Direction.CENTER);
