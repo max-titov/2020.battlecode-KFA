@@ -19,6 +19,8 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
 
+	static final int KEY = 626;
+
 
 	// HQ
 
@@ -47,6 +49,7 @@ public strictfp class RobotPlayer {
 	static MapLocation fulfillmentLoc;
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
+	static final int M_FOUND_HQ = 8732;
 	// NET_GUN
 
 	/**
@@ -193,6 +196,8 @@ public strictfp class RobotPlayer {
 					if(ri.getType() == RobotType.HQ) {
 						enemyHQLoc = ri.getLocation();
 						//TODO: Broadcast to block chain
+						int[] m = {M_FOUND_HQ, enemyHQLoc.x, enemyHQLoc.y, rc.getID()};
+						sendMessage(m, 1);
 					}
 				}
 			}
@@ -450,6 +455,38 @@ public strictfp class RobotPlayer {
 					}
 				}
 			}
+		}
+	}
+
+	static int[] getMessages() throws GameActionException {
+		return getMessages(rc.getRoundNum()-1);
+	}
+
+	static int[] getMessages(int roundNum) throws GameActionException {
+		int[] messages = new int[28]; //4 per message 7 messages
+		Transaction[] transactions = rc.getBlock(roundNum);
+		int len = transactions.length;
+		for(int i = 0; i < len; i++) {
+			if(transactions[i]==null)
+				return messages;
+			int[] m = transactions[i].getMessage();
+			if(m[0]+m[1]-m[6] == KEY) {
+				for (int j = 0; j<4; j++) {
+					messages[i*4+j] = m[j+2];
+				}
+			}
+		}
+		return messages;
+	}
+
+	static void sendMessage(int[] m, int cost) throws GameActionException {
+		int int6 = (int)(Math.random()*KEY);
+		int int1 = (int)(Math.random()*(KEY+int6-1));
+		int int0 = KEY+int6-int1;
+		//System.out.println(int0+"+"+int1+"-"+int6);
+		int[] message = {int0,int1,m[0],m[1],m[2],m[3],int6};
+		if(rc.canSubmitTransaction(message, cost)) {
+			rc.submitTransaction(message, cost);
 		}
 	}
 }
