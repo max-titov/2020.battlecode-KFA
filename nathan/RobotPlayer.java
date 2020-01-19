@@ -330,7 +330,6 @@ public strictfp class RobotPlayer {
 		if (hqLoc == null) {
 			findHQ();
 		}
-		System.out.println("outer");
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		Direction des = dirToHQ;
 		int distance = rc.getLocation().distanceSquaredTo(hqLoc);
@@ -343,8 +342,12 @@ public strictfp class RobotPlayer {
 					rc.move(des);
 				}
 			}
-		} else {
-
+		} if(rc.getRoundNum()>350) {
+			if(rc.getDirtCarrying() > 0) {
+				rc.depositDirt(dirToHQ);
+			} else {
+				rc.digDirt(dirToHQ.opposite());
+			}
 		}
 	}
 
