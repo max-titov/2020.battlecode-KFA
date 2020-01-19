@@ -81,6 +81,8 @@ public strictfp class RobotPlayer {
 	
 	static MapLocation refineryLoc;
 	
+	static int totalNearbySoup;
+	
 	// REFINERY
 
 	// VAPORATOR
@@ -160,7 +162,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 5) {
+		if (numMiners < 10) {
 			for (Direction dir : directions)
 				if (tryBuild(RobotType.MINER, dir)) {
 					numMiners++;
@@ -199,13 +201,18 @@ public strictfp class RobotPlayer {
 			refineryLoc = nearbyRefineryInfo.location;
 		}
 		
-		//building
-		if (soupLoc != null && 
-				rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && 
-				soupLoc.distanceSquaredTo(hqLoc) > 36 && 
-				(refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 36)) {
-			Direction dirToSoup = currentLoc.directionTo(soupLoc);
-			tryBuild(RobotType.REFINERY, dirToSoup);
+		//building refineries
+		if(soupLoc != null) {
+			boolean closeToSoup = rc.getLocation().distanceSquaredTo(soupLoc) <= 2;
+			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 36;
+			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 36);
+			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 150;
+			if (closeToSoup && 
+					farFromHQ && 
+					(farFromRefinery && enoughSoup)) {
+				Direction dirToSoup = currentLoc.directionTo(soupLoc);
+				tryBuild(RobotType.REFINERY, dirToSoup);
+			}
 		}
 
 		// refining and mining
@@ -216,29 +223,25 @@ public strictfp class RobotPlayer {
 		
 
 		// where to move
-		Direction desiredDir; // where the miner WANTS to go
+		MapLocation desiredLoc = null; // where the miner WANTS to go
 		// if full capacity find refinery
 		if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {
-			RobotInfo refinery = nearbyRobot(RobotType.REFINERY, rc.getTeam());
-			if (refinery != null) { // if there is a nearby refinery go there
-				Direction dirToRefinery = currentLoc.directionTo(refinery.location);
-				desiredDir = dirToRefinery;
+			if (refineryLoc != null) { // if there is a nearby refinery go there
+				desiredLoc = refineryLoc;
 			} else { // go the hq
-				Direction dirToHQ = currentLoc.directionTo(hqLoc);
-				desiredDir = dirToHQ;
+				desiredLoc = hqLoc;
 			}
 		}else if (soupLoc != null) { // move towards saved soup location
-			Direction dirToSoup = currentLoc.directionTo(soupLoc);
-
-			desiredDir = dirToSoup;
+			desiredLoc = soupLoc;
 		}
-//		else if (closestSoupMarker != null) { // move towards saved soup location
-//			Direction dirToSoup = currentLoc.directionTo(closestSoupMarker);
-//
-//			desiredDir = dirToSoup;
-//		}
-		else {
-			//make this shit better
+		else if (closestSoupMarker != null) { // move towards soup marker
+			desiredLoc = closestSoupMarker;
+		}
+		
+		Direction desiredDir;
+		if(desiredLoc != null) {
+			desiredDir = currentLoc.directionTo(desiredLoc);
+		}else {
 			desiredDir = randomDirection();
 		}
 		if(canMoveInDir(desiredDir)) {
@@ -418,7 +421,7 @@ public strictfp class RobotPlayer {
 		if(nearestSoup != null) { //if found nearby soup
 			for(int i = 0; i<soupMarkersLen; i++) {
 				if(soupMarkers[i] != null) { 
-					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 25) { //if a marker exists nearby the found soup
+					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 16) { //if a marker exists nearby the found soup
 						shouldBroadcastSoup = false; // do not broadcast to blockchain
 					}
 					//rc.setIndicatorDot(soupMarkers[i], 0, 255, 0);
@@ -449,9 +452,11 @@ public strictfp class RobotPlayer {
 		MapLocation currentLoc = rc.getLocation();
 		MapLocation[] nearbySoups = rc.senseNearbySoup();
 		MapLocation nearestSoup = null;
+		totalNearbySoup = 0;
 		int nearestSoupDist = 9999;
 		int nearbySoupsLen = nearbySoups.length;
 		for(int i = 0; i < nearbySoupsLen; i++) {
+			totalNearbySoup+=rc.senseSoup(nearbySoups[i]);
 			if(currentLoc.distanceSquaredTo(nearbySoups[i])<nearestSoupDist) {
 				nearestSoup = nearbySoups[i];
 				nearestSoupDist = currentLoc.distanceSquaredTo(nearestSoup);
