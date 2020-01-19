@@ -37,12 +37,16 @@ public strictfp class RobotPlayer {
 
 	// DELIVERY DRONE
 	static final int SCOUT_DRONE = 1;
-	static final int ATTACK_DRONE = 2;
+	static final int DEFENSE_DRONE = 2;
+	static final int ATTACK_DRONE = 3;
 	static int droneType;
 	static Direction heading;
 	static MapLocation targetLoc;
 	static boolean readyAttack;
+	static boolean readyDefense;
 	static MapLocation fulfillmentLoc;
+	static MapLocation[] defenseCircleCoords;
+	static int defenseIndex;
 	// NET_GUN
 
 	/**
@@ -154,13 +158,20 @@ public strictfp class RobotPlayer {
 		if (droneType == 0) {
 			if (enemyHQLoc == null) {
 				droneType = SCOUT_DRONE;
-			} else {
+			} 
+			else if (readyDefense){
+				droneType = DEFENSE_DRONE;
+			}
+			else {
 				droneType = ATTACK_DRONE;
 			}
 		}
 		switch (droneType) {
 		case SCOUT_DRONE:
 			runScoutDeliveryDrone();
+			break;
+		case DEFENSE_DRONE:
+			runDefenseDeliveryDrone();
 			break;
 		case ATTACK_DRONE:
 			runAttackDeliveryDrone();
@@ -188,6 +199,15 @@ public strictfp class RobotPlayer {
 		}
 		else {
 			droneType = ATTACK_DRONE;
+		}
+	}
+
+	static void runDefenseDeliveryDrone() throws GameActionException {
+		findDefenseCircleCoords();
+		if(!tryMove(rc.getLocation().directionTo(defenseCircleCoords[defenseIndex]))) {
+			if(defenseIndex < defenseCircleCoords.length) {
+				defenseIndex++;
+			}
 		}
 	}
 
@@ -339,7 +359,7 @@ public strictfp class RobotPlayer {
 			}
 		}
 	}
-	
+
 	static void findFulfillmentCenter() throws GameActionException {
 		if(fulfillmentLoc == null) {
 			for (RobotInfo bot : rc.senseNearbyRobots()) {
@@ -414,6 +434,21 @@ public strictfp class RobotPlayer {
 			case SOUTHWEST:
 				targetLoc = new MapLocation(xDiff, yDiff);
 				break;
+			}
+		}
+	}
+
+	static void findDefenseCircleCoords() throws GameActionException {
+		if (defenseCircleCoords == null){
+			defenseCircleCoords = new MapLocation[16];
+			int index = 0;
+			for(int i = -2; i <= 2; i++) {
+				for(int j = -2; j <= 2; j++) {
+					if(Math.abs(i) == 2 || Math.abs(j) == 2) {
+						defenseCircleCoords[index] = new MapLocation(hqLoc.x+i, hqLoc.y+j);
+						index++;
+					}
+				}
 			}
 		}
 	}
