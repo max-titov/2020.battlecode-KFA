@@ -38,6 +38,7 @@ public strictfp class RobotPlayer {
 
 	// MINER
 	static final int M_SOUP_MARKER = 804;
+	static final int M_REMOVE_SOUP_MARKER = 947;
 
 	static MapLocation[][] visionCircles = {
 			{l(0,0)},
@@ -404,6 +405,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void soupStuff() throws GameActionException {
+		checkForEmptySoupMarkers();
 		updateSoupMarkers();
 		MapLocation currentLoc = rc.getLocation();
 
@@ -468,20 +470,29 @@ public strictfp class RobotPlayer {
 	static void updateSoupMarkers() throws GameActionException {
 		MapLocation[] newSoupMarkers = new MapLocation[7];
 		int newSoupMarkersIndex = 0;
+		
+		MapLocation[] removeSoupMarkers = new MapLocation[7];
+		int removeSoupMarkersIndex = 0;
 		//find all messages with the soup marker tag
 		for(int i = 0; i<28; i+=4) {
 			if(currentMessages[i] == M_SOUP_MARKER) {
-				newSoupMarkers[0] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
+				newSoupMarkers[newSoupMarkersIndex] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
 				newSoupMarkersIndex++;
+			}
+			else if(currentMessages[i] == M_REMOVE_SOUP_MARKER) {
+				removeSoupMarkers[removeSoupMarkersIndex] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
+				removeSoupMarkersIndex++;
 			}
 		}
 		newSoupMarkersIndex = 0;
+		removeSoupMarkersIndex = 0;
 		int soupMarkersLen = soupMarkers.length;
 		for(int i = 0; i<soupMarkersLen; i++) {
-			if(newSoupMarkers[newSoupMarkersIndex] == null) {
-				break;
+			if(soupMarkers[i] != null && soupMarkers[i].equals(removeSoupMarkers[removeSoupMarkersIndex])) {
+				soupMarkers[i] = null;
+				removeSoupMarkersIndex++;
 			}
-			if(soupMarkers[i] == null) {
+			if(soupMarkers[i] == null && newSoupMarkers[newSoupMarkersIndex] != null) {
 				soupMarkers[i] = newSoupMarkers[newSoupMarkersIndex];
 				newSoupMarkersIndex++;
 			}
@@ -490,6 +501,16 @@ public strictfp class RobotPlayer {
 			if(soupMarkers[i] != null) {
 				rc.setIndicatorDot(soupMarkers[i], 0, 0, 255);
 			}
+		}
+	}
+	
+	static void checkForEmptySoupMarkers() throws GameActionException {
+		if(closestSoupMarker == null) {
+			return;
+		}
+		if(rc.getLocation().isWithinDistanceSquared(closestSoupMarker, 9) && totalNearbySoup < 100) {
+			int[] m = {M_REMOVE_SOUP_MARKER, closestSoupMarker.x, closestSoupMarker.y, rc.getID()};
+			sendMessage(m, 1);
 		}
 	}
 
