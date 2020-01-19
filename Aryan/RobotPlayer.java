@@ -192,7 +192,6 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runAttackDeliveryDrone() throws GameActionException {
-		//if(enemyHQ)
 	}
 
 	static void runNetGun() throws GameActionException {
