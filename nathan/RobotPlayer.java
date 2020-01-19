@@ -7,10 +7,12 @@ public strictfp class RobotPlayer {
 
 	static Direction[] directions = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
 			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
-	static Direction[] directionsButEast = { Direction.NORTH, Direction.NORTHEAST, Direction.SOUTHEAST,
-			Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
+	static Direction[] directionsButEast = { Direction.NORTH, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.SOUTH,
+			Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST };
 	static RobotType[] spawnedByMiner = { RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
 			RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN };
+	static Direction[] directionsButWest = { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST,
+			Direction.SOUTHWEST, Direction.NORTHWEST };
 	static int dirsLen = directions.length;
 	static Direction[] allDirs = Direction.allDirections();
 	static int allDirsLen = allDirs.length;
@@ -18,7 +20,7 @@ public strictfp class RobotPlayer {
 	static final int KEY = 626;
 	// HQ
 	// MINER
-	static MapLocation hqLoc;
+	static MapLocation hqLoc = null;
 	static MapLocation soupLoc;
 	static MapLocation[][] visionCircles = { { l(0, 0) }, { l(-1, 0), l(0, -1), l(1, 0), l(0, 1) },
 			{ l(-2, -1), l(-2, 0), l(-2, 1), l(-1, 1), l(-1, 2), l(0, 2), l(1, 2), l(1, 1), l(2, 1), l(2, 0), l(2, -1),
@@ -55,6 +57,9 @@ public strictfp class RobotPlayer {
 
 	// LANDSCAPER
 	static int landscaperCount = 0;
+	static int landscaperType;
+	static final int INNER = 1;
+	static final int OUTER = 2;
 	// DELIVERY DRONE
 
 	// NET_GUN
@@ -224,10 +229,6 @@ public strictfp class RobotPlayer {
 			}
 		}
 
-		int[] messages = getMessages();
-		for (int num : messages)
-			System.out.println(num);
-
 	}
 
 	static void runBuilderMiner() throws GameActionException {
@@ -254,8 +255,10 @@ public strictfp class RobotPlayer {
 			tryBuild(RobotType.LANDSCAPER, dir);
 			landscaperCount++;
 		}
-		if (rc.getRoundNum() > 247 && landscaperCount < 21) {
-			tryBuild(RobotType.LANDSCAPER, directionsButEast[directionCount%directionsButEast.length]);
+
+		dir = directionsButWest[directionCount % directionsButEast.length];
+		if (rc.getRoundNum() > 247 && rc.canBuildRobot(RobotType.LANDSCAPER, dir)) {
+			tryBuild(RobotType.LANDSCAPER, dir);
 			landscaperCount++;
 			directionCount++;
 		}
@@ -267,7 +270,27 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runLandscaper() throws GameActionException {
-		findHQ();
+		if (landscaperType == 0) {
+			if (rc.getRoundNum() < 247) {
+				landscaperType = INNER;
+			} else {
+				landscaperType = OUTER;
+			}
+		}
+		switch (landscaperType) {
+		case INNER:
+			runInnerLandscaper();
+			break;
+		case OUTER:
+			runOuterLandscaper();
+			break;
+		}
+	}
+
+	static void runInnerLandscaper() throws GameActionException {
+		if (hqLoc == null) {
+			findHQ();
+		}
 		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
 		Direction des = dirToHQ;
 		int distance = rc.getLocation().distanceSquaredTo(hqLoc);
@@ -283,17 +306,39 @@ public strictfp class RobotPlayer {
 		} else if (rc.getRoundNum() >= 247 && distance <= 2) {
 			if (distance == 2) {
 				if (rc.getDirtCarrying() > 0) {
-					//rc.depositDirt(Direction.CENTER);
+					rc.depositDirt(Direction.CENTER);
 				} else {
-					//rc.digDirt(dirToHQ.opposite().rotateRight().rotateRight());
+					rc.digDirt(dirToHQ.opposite().rotateRight().rotateRight());
 				}
-			}else {
-				if(rc.getDirtCarrying() > 0) {
-					//rc.depositDirt(Direction.CENTER);
+			} else {
+				if (rc.getDirtCarrying() > 0) {
+					rc.depositDirt(Direction.CENTER);
 				} else {
-					//rc.digDirt(dirToHQ.opposite());
+					rc.digDirt(dirToHQ.opposite());
 				}
 			}
+		}
+	}
+
+	static void runOuterLandscaper() throws GameActionException {
+		if (hqLoc == null) {
+			findHQ();
+		}
+		System.out.println("outer");
+		Direction dirToHQ = rc.getLocation().directionTo(hqLoc);
+		Direction des = dirToHQ;
+		int distance = rc.getLocation().distanceSquaredTo(hqLoc);
+		if (distance != 8 && distance != 5) {
+			if (rc.canMove(des))
+				rc.move(des);
+			else {
+				des = bugPathing2(des);
+				if (des != null) {
+					rc.move(des);
+				}
+			}
+		} else {
+
 		}
 	}
 
@@ -337,6 +382,10 @@ public strictfp class RobotPlayer {
 	 */
 	static Direction randomDirection() {
 		return directions[(int) (Math.random() * directions.length)];
+	}
+
+	static Direction randomDirectionButWest() {
+		return directions[(int) (Math.random() * directionsButWest.length)];
 	}
 
 	/**
