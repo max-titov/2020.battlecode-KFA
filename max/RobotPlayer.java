@@ -80,7 +80,7 @@ public strictfp class RobotPlayer {
 	static MapLocation closestSoupMarker = null;
 	static MapLocation soupLoc = null;
 	
-	static MapLocation refineryLoc;
+	static MapLocation refineryLoc = null;
 	
 	static int totalNearbySoup;
 	
@@ -163,7 +163,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 10) {
+		if (numMiners < 200) {
 			for (Direction dir : directions)
 				if (tryBuild(RobotType.MINER, dir)) {
 					numMiners++;
@@ -207,7 +207,7 @@ public strictfp class RobotPlayer {
 			boolean closeToSoup = rc.getLocation().distanceSquaredTo(soupLoc) <= 2;
 			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 36;
 			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 36);
-			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 150;
+			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 100;
 			if (closeToSoup && 
 					farFromHQ && 
 					(farFromRefinery && enoughSoup)) {
@@ -238,6 +238,7 @@ public strictfp class RobotPlayer {
 		else if (closestSoupMarker != null) { // move towards soup marker
 			desiredLoc = closestSoupMarker;
 		}
+		System.out.println(closestSoupMarker);
 		
 		Direction desiredDir;
 		if(desiredLoc != null) {
@@ -423,7 +424,7 @@ public strictfp class RobotPlayer {
 		if(nearestSoup != null) { //if found nearby soup
 			for(int i = 0; i<soupMarkersLen; i++) {
 				if(soupMarkers[i] != null) { 
-					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 16) { //if a marker exists nearby the found soup
+					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 100) { //if a marker exists nearby the found soup
 						shouldBroadcastSoup = false; // do not broadcast to blockchain
 					}
 					//rc.setIndicatorDot(soupMarkers[i], 0, 255, 0);
@@ -488,11 +489,19 @@ public strictfp class RobotPlayer {
 		removeSoupMarkersIndex = 0;
 		int soupMarkersLen = soupMarkers.length;
 		for(int i = 0; i<soupMarkersLen; i++) {
-			if(soupMarkers[i] != null && soupMarkers[i].equals(removeSoupMarkers[removeSoupMarkersIndex])) {
-				soupMarkers[i] = null;
-				removeSoupMarkersIndex++;
+			if(soupMarkers[i] != null) {
+				for(int j = 0; j<7; j++) {
+					if(removeSoupMarkers[j] != null && soupMarkers[i].equals(removeSoupMarkers[j])) {
+						removeSoupMarkers[j] = null;
+						soupMarkers[i] = null;
+					}
+				}
 			}
-			if(soupMarkers[i] == null && newSoupMarkers[newSoupMarkersIndex] != null) {
+//			if(soupMarkers[i] != null && removeSoupMarkersIndex < 7 &&  soupMarkers[i].equals(removeSoupMarkers[removeSoupMarkersIndex])) {
+//				soupMarkers[i] = null;
+//				removeSoupMarkersIndex++;
+//			}
+			if(soupMarkers[i] == null && newSoupMarkersIndex < 7 && newSoupMarkers[newSoupMarkersIndex] != null) {
 				soupMarkers[i] = newSoupMarkers[newSoupMarkersIndex];
 				newSoupMarkersIndex++;
 			}
@@ -508,8 +517,9 @@ public strictfp class RobotPlayer {
 		if(closestSoupMarker == null) {
 			return;
 		}
-		if(rc.getLocation().isWithinDistanceSquared(closestSoupMarker, 9) && totalNearbySoup < 100) {
+		if(rc.getLocation().isWithinDistanceSquared(closestSoupMarker, 2) && totalNearbySoup < 100) {
 			int[] m = {M_REMOVE_SOUP_MARKER, closestSoupMarker.x, closestSoupMarker.y, rc.getID()};
+			closestSoupMarker = null;
 			sendMessage(m, 1);
 		}
 	}
