@@ -18,6 +18,11 @@ public strictfp class RobotPlayer {
 
 	static final int KEY = 626;
 	
+	static int[] currentMessages;
+	
+	static Team myTeam;
+	static Team opponent;
+	
 	//map size
 	static int minX;
 	static int minY;
@@ -32,7 +37,7 @@ public strictfp class RobotPlayer {
 	static boolean builtBuilderMiner = false;
 
 	// MINER
-	static final int SOUP_CODE = 804;
+	static final int M_SOUP_MARKER = 804;
 
 	static MapLocation[][] visionCircles = {
 			{l(0,0)},
@@ -70,8 +75,11 @@ public strictfp class RobotPlayer {
 	static final int SOUP_MINER = 1;
 	static final int BUILDER_MINER = 2;
 	
-	static MapLocation[] manySoups = new MapLocation[20];
-	static int soupIndex = -1;
+	static MapLocation[] soupMarkers = new MapLocation[20];
+	static MapLocation closestSoupMarker = null;
+	static MapLocation soupLoc = null;
+	
+	static MapLocation refineryLoc;
 	
 	// REFINERY
 
@@ -98,6 +106,9 @@ public strictfp class RobotPlayer {
 		// robot,
 		// and to get information on its current status.
 		RobotPlayer.rc = rc;
+		
+		myTeam = rc.getTeam();
+		opponent = myTeam.opponent();
 
 		turnCount = 0;
 
@@ -107,6 +118,8 @@ public strictfp class RobotPlayer {
 		maxY = rc.getMapHeight();
 		while (true) {
 			turnCount += 1;
+			if(rc.getRoundNum() > 1)
+				currentMessages = getMessages();
 			try {
 				switch (rc.getType()) {
 				case HQ:
@@ -178,10 +191,22 @@ public strictfp class RobotPlayer {
 
 		RobotInfo[] nearbyBots = rc.senseNearbyRobots();
 		MapLocation currentLoc = rc.getLocation();
-		// tryBlockchain();
-		// scan nearby area for the nearest soup location and save to a variable
-		//nearbySoup();
+
+		soupStuff();
 		
+		RobotInfo nearbyRefineryInfo = nearbyRobot(RobotType.REFINERY, myTeam);
+		if(nearbyRefineryInfo != null) {
+			refineryLoc = nearbyRefineryInfo.location;
+		}
+		
+		//building
+		if (soupLoc != null && 
+				rc.getLocation().distanceSquaredTo(soupLoc) <= 2 && 
+				soupLoc.distanceSquaredTo(hqLoc) > 36 && 
+				(refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 36)) {
+			Direction dirToSoup = currentLoc.directionTo(soupLoc);
+			tryBuild(RobotType.REFINERY, dirToSoup);
+		}
 
 		// refining and mining
 		for (int i = 0; i< allDirsLen; i++)
@@ -202,13 +227,21 @@ public strictfp class RobotPlayer {
 				Direction dirToHQ = currentLoc.directionTo(hqLoc);
 				desiredDir = dirToHQ;
 			}
-		
-		} else {
+		}else if (soupLoc != null) { // move towards saved soup location
+			Direction dirToSoup = currentLoc.directionTo(soupLoc);
+
+			desiredDir = dirToSoup;
+		}
+//		else if (closestSoupMarker != null) { // move towards saved soup location
+//			Direction dirToSoup = currentLoc.directionTo(closestSoupMarker);
+//
+//			desiredDir = dirToSoup;
+//		}
+		else {
 			//make this shit better
 			desiredDir = randomDirection();
 		}
-		
-		if(rc.canMove(desiredDir)) {
+		if(canMoveInDir(desiredDir)) {
 			rc.move(desiredDir);
 		} else {
 			// bug pathfinding
@@ -284,14 +317,6 @@ public strictfp class RobotPlayer {
 		return directions[(int) (Math.random() * dirsLen)];
 	}
 
-	/**
-	 * Returns a random RobotType spawned by miners.
-	 *
-	 * @return a random RobotType
-	 */
-	static RobotType randomSpawnedByMiner() {
-		return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
-	}
 
 	static boolean tryMove() throws GameActionException {
 		for (Direction dir : directions)
@@ -376,10 +401,91 @@ public strictfp class RobotPlayer {
 	}
 
 	static void soupStuff() throws GameActionException {
+		updateSoupMarkers();
 		MapLocation currentLoc = rc.getLocation();
-//		MapLocation[] nearbySoups = rc.senseNearbySoup();
-//		int len = manySoups.length;
-//		for(int i = 0; i<)
+
+		MapLocation nearestSoup = nearestSoup();
+		if(soupLoc==null) {
+			soupLoc = nearestSoup;
+		}
+		// remove current soup target if the target is empty
+		if (soupLoc != null && rc.canSenseLocation(soupLoc) && rc.senseSoup(soupLoc) <= 0) {
+			soupLoc = null;
+		}
+		
+		int soupMarkersLen = soupMarkers.length;
+		boolean shouldBroadcastSoup = true;
+		if(nearestSoup != null) { //if found nearby soup
+			for(int i = 0; i<soupMarkersLen; i++) {
+				if(soupMarkers[i] != null) { 
+					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 25) { //if a marker exists nearby the found soup
+						shouldBroadcastSoup = false; // do not broadcast to blockchain
+					}
+					//rc.setIndicatorDot(soupMarkers[i], 0, 255, 0);
+				}
+			}
+			if(shouldBroadcastSoup) {
+				int[] m = {M_SOUP_MARKER, nearestSoup.x, nearestSoup.y, rc.getID()};
+				sendMessage(m, 1);
+			}
+		}else if(soupLoc == null){ //if no current soup target
+			// find nearest soup marker
+			int closestSoupMarkerDist = 99999;
+			for(int i = 0; i<soupMarkersLen; i++) {
+				// trying to find closest marker
+				if(soupMarkers[i] != null) { 
+					if(soupMarkers[i].distanceSquaredTo(currentLoc) <= closestSoupMarkerDist) {
+						closestSoupMarker = soupMarkers[i];
+						closestSoupMarkerDist = closestSoupMarker.distanceSquaredTo(currentLoc);
+					}
+					//rc.setIndicatorDot(soupMarkers[i], 255, 0, 0);
+				}
+			}
+		}
+
+	}
+	
+	static MapLocation nearestSoup() throws GameActionException {
+		MapLocation currentLoc = rc.getLocation();
+		MapLocation[] nearbySoups = rc.senseNearbySoup();
+		MapLocation nearestSoup = null;
+		int nearestSoupDist = 9999;
+		int nearbySoupsLen = nearbySoups.length;
+		for(int i = 0; i < nearbySoupsLen; i++) {
+			if(currentLoc.distanceSquaredTo(nearbySoups[i])<nearestSoupDist) {
+				nearestSoup = nearbySoups[i];
+				nearestSoupDist = currentLoc.distanceSquaredTo(nearestSoup);
+			}
+		}
+		return nearestSoup;
+	}
+	
+	static void updateSoupMarkers() throws GameActionException {
+		MapLocation[] newSoupMarkers = new MapLocation[7];
+		int newSoupMarkersIndex = 0;
+		//find all messages with the soup marker tag
+		for(int i = 0; i<28; i+=4) {
+			if(currentMessages[i] == M_SOUP_MARKER) {
+				newSoupMarkers[0] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
+				newSoupMarkersIndex++;
+			}
+		}
+		newSoupMarkersIndex = 0;
+		int soupMarkersLen = soupMarkers.length;
+		for(int i = 0; i<soupMarkersLen; i++) {
+			if(newSoupMarkers[newSoupMarkersIndex] == null) {
+				break;
+			}
+			if(soupMarkers[i] == null) {
+				soupMarkers[i] = newSoupMarkers[newSoupMarkersIndex];
+				newSoupMarkersIndex++;
+			}
+		}
+		for(int i = 0; i<soupMarkersLen; i++) {
+			if(soupMarkers[i] != null) {
+				rc.setIndicatorDot(soupMarkers[i], 0, 0, 255);
+			}
+		}
 	}
 
 	static MapLocation l(int x, int y) {
