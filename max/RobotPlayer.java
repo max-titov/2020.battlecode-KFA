@@ -24,6 +24,9 @@ public strictfp class RobotPlayer {
 	static Team opponent;
 	
 	static MapLocation[] possibleEnemyHQ = {null,null,null};
+	static MapLocation hqLoc;
+	
+	static final int M_HQ_LOC = 384;
 	
 	//map size
 	static int minX;
@@ -31,7 +34,6 @@ public strictfp class RobotPlayer {
 	static int maxX;
 	static int maxY;
 	
-	static MapLocation hqLoc;
 	
 	// HQ
 	static int numMiners = 0;
@@ -134,6 +136,9 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
+		hqLoc = rc.getLocation();
+		int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
+		sendMessage(m, 1);
 		if (numMiners < 8) {
 			for (Direction dir : directions)
 				if (tryBuild(RobotType.MINER, dir)) {
@@ -141,6 +146,7 @@ public strictfp class RobotPlayer {
 				}
 		}
 	}
+	
 	static void runMiner() throws GameActionException {
 		findHQ();
 		soupStuff();
@@ -335,7 +341,6 @@ public strictfp class RobotPlayer {
 	static Direction randomDirection() {
 		return directions[(int) (Math.random() * dirsLen)];
 	}
-
 
 	static boolean tryMove() throws GameActionException {
 		for (Direction dir : directions)
