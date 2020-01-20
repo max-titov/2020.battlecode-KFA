@@ -40,38 +40,6 @@ public strictfp class RobotPlayer {
 	static final int M_SOUP_MARKER = 804;
 	static final int M_REMOVE_SOUP_MARKER = 947;
 
-	static MapLocation[][] visionCircles = {
-			{l(0,0)},
-			{l(-1,0),l(0,-1),l(1,0),l(0,1)},
-			{l(-2,-1),l(-2,0),l(-2,1),l(-1,1),
-				l(-1,2),l(0,2),l(1,2),l(1,1),
-				l(2,1),l(2,0),l(2,-1),l(1,-1),
-				l(1,-2),l(0,-2),l(-1,-2),l(-1,-1)},
-			{l(-3,-2),l(-3,-1),l(-3,0),l(-3,1),
-				l(-3,2),l(-2,2),l(-2,3),l(-1,3),
-				l(0,3),l(1,3),l(2,3),l(2,2),
-				l(3,2),l(3,1),l(3,0),l(3,-1),
-				l(3,-2),l(2,-2),l(2,-3),l(1,-3),
-				l(0,-3),l(-1,-3),l(-2,-3),l(-2,-2)},
-			{l(-4,-2),l(-4,-1),l(-4,0),l(-4,1),
-				l(-4,2),l(-3,3),l(-2,4),l(-1,4),
-				l(0,4),l(1,4),l(2,4),l(3,3),
-				l(4,2),l(4,1),l(4,0),l(4,-1),
-				l(4,-2),l(3,-3),l(2,-4),l(1,-4),
-				l(0,-4),l(-1,-4),l(-2,-4),l(-3,-3)},
-			{l(-5,-3),l(-5,-2),l(-5,-1),l(-5,0),
-				l(-5,1),l(-5,2),l(-5,3),l(-4,3),
-				l(-4,4),l(-3,4),l(-3,5),l(-2,5),
-				l(-1,5),l(0,5),l(1,5),l(2,5),
-				l(3,5),l(3,4),l(4,4),l(4,3),
-				l(5,3),l(5,2),l(5,1),l(5,0),
-				l(5,-1),l(5,-2),l(5,-3),l(4,-3),
-				l(4,-4),l(3,-4),l(3,-5),l(2,-5),
-				l(1,-5),l(0,-5),l(-1,-5),l(-2,-5),
-				l(-3,-5),l(-3,-4),l(-4,-4),l(-4,-3)},
-			{l(0,0)}
-	};
-	
 	static int minerType;
 	static final int SOUP_MINER = 1;
 	static final int BUILDER_MINER = 2;
@@ -189,6 +157,7 @@ public strictfp class RobotPlayer {
 		}
 			
 	}
+	
 	static void runSoupMiner() throws GameActionException {
 		findHQ();
 
@@ -256,6 +225,10 @@ public strictfp class RobotPlayer {
 			}
 		}
 
+	}
+
+	static void runExplorerMiner() throws GameActionException {
+		
 	}
 	
 	static void runBuilderMiner() throws GameActionException {
@@ -421,7 +394,7 @@ public strictfp class RobotPlayer {
 		
 		int soupMarkersLen = soupMarkers.length;
 		boolean shouldBroadcastSoup = true;
-		if(nearestSoup != null) { //if found nearby soup
+		if(nearestSoup != null && !currentLoc.isWithinDistanceSquared(hqLoc, 49)) { //if found nearby soup and far enough from hq
 			for(int i = 0; i<soupMarkersLen; i++) {
 				if(soupMarkers[i] != null) { 
 					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 36) { //if a marker exists nearby the found soup
@@ -527,10 +500,6 @@ public strictfp class RobotPlayer {
 		}
 	}
 
-	static MapLocation l(int x, int y) {
-		return new MapLocation(x, y);
-	}
-
 	static RobotInfo nearbyRobot(RobotType target, Team team) throws GameActionException {
 		RobotInfo[] robots = rc.senseNearbyRobots();
 		for (RobotInfo r : robots) {
@@ -571,7 +540,7 @@ public strictfp class RobotPlayer {
 	}
 	
 	static Direction bugPathing3(Direction dir) throws GameActionException {
-		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.rotateRight(), dir.rotateRight().rotateRight()};
 		int len = toTry.length;
 		for(int i = 0; i<len; i++) {
 			if(safeToMove(toTry[i])) {
