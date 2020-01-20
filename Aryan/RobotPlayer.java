@@ -165,10 +165,7 @@ public strictfp class RobotPlayer {
 		//TODO: check block chain for hq coordinates
 		//TODO: check block chain for enemy location
 		if (droneType == 0) {
-			if (enemyHQLoc == null) {
-				droneType = SCOUT_DRONE;
-			} 
-			else if (readyDefense){
+			if (readyDefense){
 				droneType = DEFENSE_DRONE;
 			}
 			else {
@@ -176,40 +173,12 @@ public strictfp class RobotPlayer {
 			}
 		}
 		switch (droneType) {
-		case SCOUT_DRONE:
-			runScoutDeliveryDrone();
-			break;
 		case DEFENSE_DRONE:
 			runDefenseDeliveryDrone();
 			break;
 		case ATTACK_DRONE:
 			runAttackDeliveryDrone();
 			break;
-		}
-	}
-
-	static void runScoutDeliveryDrone() throws GameActionException {
-		MapLocation current = rc.getLocation();
-		int currentRadius = rc.getCurrentSensorRadiusSquared();
-		if(enemyHQLoc == null) {
-			findScoutHeading();
-			findTargetLocation();
-			if(!current.isWithinDistanceSquared(targetLoc, currentRadius)) {
-				tryMove(current.directionTo(targetLoc));
-			}
-			else {
-				for(RobotInfo ri:rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
-					if(ri.getType() == RobotType.HQ) {
-						enemyHQLoc = ri.getLocation();
-						//TODO: Broadcast to block chain
-						int[] m = {M_FOUND_HQ, enemyHQLoc.x, enemyHQLoc.y, rc.getID()};
-						sendMessage(m, 1);
-					}
-				}
-			}
-		}
-		else {
-			droneType = ATTACK_DRONE;
 		}
 	}
 
