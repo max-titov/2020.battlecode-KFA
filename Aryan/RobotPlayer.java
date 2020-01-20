@@ -18,7 +18,9 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT2 = 2;
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
-	static final int KEY = 626;
+	static final int KEY = 23;
+	
+	static final int M_HQ_LOC = 898;
 
 	// HQ
 
@@ -47,7 +49,7 @@ public strictfp class RobotPlayer {
 	static MapLocation fulfillmentLoc;
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
-	static final int M_FOUND_HQ = 8732;
+	static final int M_FOUND_HQ = 732;
 
 	// NET_GUN
 
@@ -90,7 +92,8 @@ public strictfp class RobotPlayer {
 
 	static void runHQ() throws GameActionException {
 		hqLoc = rc.getLocation();
-		//TODO: broadcast hq location to blockchain
+		int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
+		sendMessage(m, 1);
 		if(mapCorner == 0) {
 			findCorner();
 		}
@@ -125,7 +128,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runFulfillmentCenter() throws GameActionException {
-		//TODO: get hq coordinates from blockchain
+		findHQ();
 		findCorner();
 		if(directionsToBuild == null) {
 			directionsToBuild = new Direction[3];
@@ -162,8 +165,13 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDeliveryDrone() throws GameActionException {
-		//TODO: check block chain for hq coordinates
-		//TODO: check block chain for enemy location
+		findHQ();
+		int[] messages = getMessages();
+		for(int i = 0; i<messages.length; i+=6) {
+			if(messages[i] == M_HQ_LOC) {
+				hqLoc= new MapLocation(messages[i+1],messages[i+2]);
+			}
+		}
 		if (droneType == 0) {
 			if (enemyHQLoc == null) {
 				droneType = SCOUT_DRONE;
@@ -201,8 +209,7 @@ public strictfp class RobotPlayer {
 				for(RobotInfo ri:rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), rc.getTeam().opponent())) {
 					if(ri.getType() == RobotType.HQ) {
 						enemyHQLoc = ri.getLocation();
-						//TODO: Broadcast to block chain
-						int[] m = {M_FOUND_HQ, enemyHQLoc.x, enemyHQLoc.y, rc.getID()};
+						int[] m = {M_FOUND_HQ, enemyHQLoc.x, enemyHQLoc.y, rand(),rand(),rand()};
 						sendMessage(m, 1);
 					}
 				}
@@ -403,6 +410,19 @@ public strictfp class RobotPlayer {
 			for (RobotInfo bot : rc.senseNearbyRobots()) {
 				if(bot.type == RobotType.HQ && bot.team == rc.getTeam()) {
 					hqLoc = bot.location;
+					return;
+				}
+			}
+			int[] messages = getMessages(0);
+			for(int i = 0; i<messages.length; i+=6) {
+				if(messages[i] == M_HQ_LOC) {
+					hqLoc= new MapLocation(messages[i+1],messages[i+2]);
+				}
+			}
+			messages = getMessages(1);
+			for(int i = 0; i<messages.length; i+=6) {
+				if(messages[i] == M_HQ_LOC) {
+					hqLoc= new MapLocation(messages[i+1],messages[i+2]);
 				}
 			}
 		}
@@ -504,32 +524,49 @@ public strictfp class RobotPlayer {
 	static int[] getMessages() throws GameActionException {
 		return getMessages(rc.getRoundNum()-1);
 	}
-
+	
 	static int[] getMessages(int roundNum) throws GameActionException {
-		int[] messages = new int[28]; //4 per message 7 messages
+		int[] messages = new int[42]; //6 per message 7 messages
 		Transaction[] transactions = rc.getBlock(roundNum);
 		int len = transactions.length;
 		for(int i = 0; i < len; i++) {
 			if(transactions[i]==null)
 				return messages;
 			int[] m = transactions[i].getMessage();
-			if(m[0]+m[1]-m[6] == KEY) {
-				for (int j = 0; j<4; j++) {
-					messages[i*4+j] = m[j+2];
+			//check if its our message
+			int divisor = m[6]*KEY;
+			boolean ourMessage = true;
+			for(int j = 0; j<6; j++) {
+				if(m[j]%divisor!=0) {
+					ourMessage = false;
+					break;
+				}
+			}
+			//if our message add to messages array
+			if(ourMessage) {
+				for(int j = 0; j<6; j++) {
+					messages[i*6+j] = m[j]/divisor;
 				}
 			}
 		}
 		return messages;
 	}
-
-	static void sendMessage(int[] m, int cost) throws GameActionException {
-		int int6 = (int)(Math.random()*KEY);
-		int int1 = (int)(Math.random()*(KEY+int6-1));
-		int int0 = KEY+int6-int1;
-		//System.out.println(int0+"+"+int1+"-"+int6);
-		int[] message = {int0,int1,m[0],m[1],m[2],m[3],int6};
+		
+	static boolean sendMessage(int[] m, int cost) throws GameActionException {
+		int encoder = rand();
+		// encode message
+		for(int i = 0; i<6; i++) {
+			m[i] = m[i]* KEY*encoder;
+		}
+		int[] message = {m[0],m[1],m[2],m[3],m[4],m[5],encoder};
 		if(rc.canSubmitTransaction(message, cost)) {
 			rc.submitTransaction(message, cost);
+			return true;
 		}
+		return false;
+	}
+	
+	static int rand() throws GameActionException {
+		return (int)(Math.random()*500)+1;
 	}
 }
