@@ -181,6 +181,7 @@ public strictfp class RobotPlayer {
 				enemyHQLoc = new MapLocation(messages[i+1],messages[i+2]);
 			}
 		}
+		//TODO: Check if defense is ready from block chain
 		if (droneType == 0) {
 			if (!readyDefense){
 				droneType = DEFENSE_DRONE;
@@ -203,6 +204,9 @@ public strictfp class RobotPlayer {
 		MapLocation currentLoc = rc.getLocation();
 		findDefenseCircleCoords();
 		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
+		while(desiredLoc.x < 0 || desiredLoc.y < 0 ||desiredLoc.x > rc.getMapWidth() || desiredLoc.y > rc.getMapHeight()) {
+			desiredLoc = defenseCircleCoords[++defenseIndex];
+		}
 		Direction desiredDir = currentLoc.directionTo(desiredLoc);
 		if(!currentLoc.equals(desiredLoc)) {
 			if(!tryMove(desiredDir)) {
@@ -210,6 +214,10 @@ public strictfp class RobotPlayer {
 					RobotInfo occupiedRobot = rc.senseRobotAtLocation(desiredLoc);
 					if(occupiedRobot.getType() == rc.getType() && occupiedRobot.getTeam() == rc.getTeam()) {
 						desiredLoc = defenseCircleCoords[++defenseIndex];
+					}
+					if(defenseIndex >= defenseCircleCoords.length) {
+						readyDefense = true;
+						//TODO:Broadcast to block chain that defense is ready
 					}
 				}
 				else {
@@ -495,8 +503,7 @@ public strictfp class RobotPlayer {
 			for(int i = -2; i <= 2; i++) {
 				for(int j = -2; j <= 2; j++) {
 					if(Math.abs(i) == 2 || Math.abs(j) == 2) {
-						defenseCircleCoords[index] = new MapLocation(hqLoc.x+i, hqLoc.y+j);
-						index++;
+						defenseCircleCoords[index++] = new MapLocation(hqLoc.x+i, hqLoc.y+j);
 					}
 				}
 			}
