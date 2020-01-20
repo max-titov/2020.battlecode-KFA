@@ -342,7 +342,7 @@ public strictfp class RobotPlayer {
 					rc.move(des);
 				}
 			}
-		} if(rc.getRoundNum()>350) {
+		} if(rc.getRoundNum()>350 && distance != 10) {
 			if(rc.getDirtCarrying() > 0) {
 				rc.depositDirt(dirToHQ);
 			} else {
