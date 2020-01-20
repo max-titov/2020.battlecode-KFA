@@ -19,11 +19,11 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
 	static final int KEY = 23;
-	
+
 	static final int M_HQ_LOC = 898;
 
 	// HQ
-
+	static boolean builtMiner;
 	// MINER
 
 	// REFINERY
@@ -49,7 +49,7 @@ public strictfp class RobotPlayer {
 	static MapLocation fulfillmentLoc;
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
-	static final int M_FOUND_HQ = 732;
+	static final int M_FOUND_ENEMY_HQ = 732;
 
 	// NET_GUN
 
@@ -92,7 +92,7 @@ public strictfp class RobotPlayer {
 
 	static void runHQ() throws GameActionException {
 		hqLoc = rc.getLocation();
-		if(rc.getRoundNum() == 0) {
+		if(rc.getRoundNum() == 1) {
 			int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
 			sendMessage(m, 1);
 		}
@@ -105,15 +105,21 @@ public strictfp class RobotPlayer {
 				rc.shootUnit(ri.getID());
 			}
 		}
-		tryBuild(RobotType.MINER, Direction.NORTH);
+		if(!builtMiner) {
+			tryBuild(RobotType.MINER, Direction.NORTH);
+			builtMiner = true;
+		}
 	}
 
 	static void runMiner() throws GameActionException {
-		if(rc.getRoundNum() < 5) {
+		if(rc.getRoundNum() < 20) {
 			tryMove(Direction.EAST);
 		}
-		else {
+		else if(rc.getRoundNum() < 30){
 			tryBuild(RobotType.FULFILLMENT_CENTER, Direction.NORTH);
+		}
+		else {
+			tryMove(Direction.SOUTH);
 		}
 	}
 
@@ -158,8 +164,9 @@ public strictfp class RobotPlayer {
 
 			}
 		}
-		tryBuild(RobotType.DELIVERY_DRONE, directionsToBuild[directionIndex]);
-		directionIndex = directionIndex<2 ? directionIndex+1 : 0;
+		if(tryBuild(RobotType.DELIVERY_DRONE, directionsToBuild[directionIndex])) {
+			directionIndex = directionIndex<2 ? directionIndex+1 : 0;
+		}
 	}
 
 	static void runLandscaper() throws GameActionException {
@@ -170,12 +177,12 @@ public strictfp class RobotPlayer {
 		findHQ();
 		int[] messages = getMessages();
 		for(int i = 0; i<messages.length; i+=6) {
-			if(messages[i] == M_HQ_LOC) {
-				hqLoc= new MapLocation(messages[i+1],messages[i+2]);
+			if(messages[i] == M_FOUND_ENEMY_HQ) {
+				enemyHQLoc = new MapLocation(messages[i+1],messages[i+2]);
 			}
 		}
 		if (droneType == 0) {
-			if (readyDefense){
+			if (!readyDefense){
 				droneType = DEFENSE_DRONE;
 			}
 			else {
@@ -194,10 +201,10 @@ public strictfp class RobotPlayer {
 
 	static void runDefenseDeliveryDrone() throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
-		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
 		findDefenseCircleCoords();
-		while(currentLoc != desiredLoc) {
-			Direction desiredDir = currentLoc.directionTo(desiredLoc);
+		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
+		Direction desiredDir = currentLoc.directionTo(desiredLoc);
+		if(!currentLoc.equals(desiredLoc)) {
 			if(!tryMove(desiredDir)) {
 				if(currentLoc.isAdjacentTo(desiredLoc) && rc.getCurrentSensorRadiusSquared() > 2) {
 					RobotInfo occupiedRobot = rc.senseRobotAtLocation(desiredLoc);
@@ -207,8 +214,11 @@ public strictfp class RobotPlayer {
 				}
 				else {
 					desiredDir = bugPathing(desiredDir);
+					if(desiredDir != null) {
+						tryMove(desiredDir);
+					}
 				}
-			} 
+			}
 		}
 	}
 
@@ -385,7 +395,7 @@ public strictfp class RobotPlayer {
 					return;
 				}
 			}
-			int[] messages = getMessages(0);
+			int[] messages = getMessages(1);
 			for(int i = 0; i<messages.length; i+=6) {
 				if(messages[i] == M_HQ_LOC) {
 					hqLoc= new MapLocation(messages[i+1],messages[i+2]);
@@ -496,7 +506,7 @@ public strictfp class RobotPlayer {
 	static int[] getMessages() throws GameActionException {
 		return getMessages(rc.getRoundNum()-1);
 	}
-	
+
 	static int[] getMessages(int roundNum) throws GameActionException {
 		int[] messages = new int[42]; //6 per message 7 messages
 		Transaction[] transactions = rc.getBlock(roundNum);
@@ -523,7 +533,7 @@ public strictfp class RobotPlayer {
 		}
 		return messages;
 	}
-		
+
 	static boolean sendMessage(int[] m, int cost) throws GameActionException {
 		int encoder = rand();
 		// encode message
@@ -537,7 +547,7 @@ public strictfp class RobotPlayer {
 		}
 		return false;
 	}
-	
+
 	static int rand() throws GameActionException {
 		return (int)(Math.random()*500)+1;
 	}
