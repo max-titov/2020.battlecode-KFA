@@ -18,9 +18,7 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT2 = 2;
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
-
 	static final int KEY = 626;
-
 
 	// HQ
 
@@ -50,6 +48,7 @@ public strictfp class RobotPlayer {
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
 	static final int M_FOUND_HQ = 8732;
+
 	// NET_GUN
 
 	/**
@@ -91,6 +90,7 @@ public strictfp class RobotPlayer {
 
 	static void runHQ() throws GameActionException {
 		hqLoc = rc.getLocation();
+		//TODO: broadcast hq location to blockchain
 		if(mapCorner == 0) {
 			findCorner();
 		}
@@ -208,10 +208,16 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDefenseDeliveryDrone() throws GameActionException {
+		MapLocation currentLoc = rc.getLocation();
 		findDefenseCircleCoords();
-		if(!tryMove(rc.getLocation().directionTo(defenseCircleCoords[defenseIndex]))) {
-			if(defenseIndex < defenseCircleCoords.length) {
-				defenseIndex++;
+		Direction desiredDir = currentLoc.directionTo(defenseCircleCoords[defenseIndex]);
+		if(canMoveInDir(desiredDir)) {
+			rc.move(desiredDir);
+		} 
+		else {
+			desiredDir = bugPathing(desiredDir);
+			if(desiredDir != null) {
+				rc.move(desiredDir);
 			}
 		}
 	}
@@ -332,6 +338,29 @@ public strictfp class RobotPlayer {
 		// System.out.println(rc.getRoundMessages(turnCount-1));
 	}
 
+	static boolean canMoveInDir(Direction dir) throws GameActionException {
+		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+			return true;
+		}
+		return false;
+	}
+	
+	static Direction bugPathing(Direction desiredDir) throws GameActionException {
+		if(canMoveInDir(desiredDir.rotateRight())) {
+			return desiredDir.rotateRight();
+		}
+		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+			return desiredDir.rotateRight().rotateRight();
+		}
+		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
+			return desiredDir.rotateRight().rotateRight().rotateRight();
+		}
+		else {
+			return null;
+		}
+		
+	}
+	
 	static void findCorner() throws GameActionException {
 		int myX = hqLoc.x;
 		int myY = hqLoc.y;
