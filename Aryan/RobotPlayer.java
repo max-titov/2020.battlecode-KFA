@@ -100,10 +100,16 @@ public strictfp class RobotPlayer {
 				rc.shootUnit(ri.getID());
 			}
 		}
+		tryBuild(RobotType.MINER, Direction.NORTH);
 	}
 
 	static void runMiner() throws GameActionException {
-
+		if(rc.getRoundNum() < 5) {
+			tryMove(Direction.EAST);
+		}
+		else {
+			tryBuild(RobotType.FULFILLMENT_CENTER, Direction.NORTH);
+		}
 	}
 
 	static void runRefinery() throws GameActionException {
@@ -209,16 +215,21 @@ public strictfp class RobotPlayer {
 
 	static void runDefenseDeliveryDrone() throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
+		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
 		findDefenseCircleCoords();
-		Direction desiredDir = currentLoc.directionTo(defenseCircleCoords[defenseIndex]);
-		if(canMoveInDir(desiredDir)) {
-			rc.move(desiredDir);
-		} 
-		else {
-			desiredDir = bugPathing(desiredDir);
-			if(desiredDir != null) {
-				rc.move(desiredDir);
-			}
+		while(currentLoc != desiredLoc) {
+			Direction desiredDir = currentLoc.directionTo(desiredLoc);
+			if(!tryMove(desiredDir)) {
+				if(currentLoc.isAdjacentTo(desiredLoc) && rc.getCurrentSensorRadiusSquared() > 2) {
+					RobotInfo occupiedRobot = rc.senseRobotAtLocation(desiredLoc);
+					if(occupiedRobot.getType() == rc.getType() && occupiedRobot.getTeam() == rc.getTeam()) {
+						desiredLoc = defenseCircleCoords[++defenseIndex];
+					}
+				}
+				else {
+					desiredDir = bugPathing(desiredDir);
+				}
+			} 
 		}
 	}
 
@@ -344,23 +355,26 @@ public strictfp class RobotPlayer {
 		}
 		return false;
 	}
-	
-	static Direction bugPathing(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
-			return desiredDir.rotateRight();
+
+	static Direction bugPathing(Direction dir) throws GameActionException {
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
+		int len = toTry.length;
+		for(int i = 0; i<len; i++) {
+			if(safeToMove(toTry[i])) {
+				return toTry[i];
+			}
 		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
-			return desiredDir.rotateRight().rotateRight();
-		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
-			return desiredDir.rotateRight().rotateRight().rotateRight();
-		}
-		else {
-			return null;
-		}
-		
+		return null;
+
 	}
-	
+
+	static boolean safeToMove(Direction dir) throws GameActionException {
+		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+			return true;
+		}
+		return false;
+	}
+
 	static void findCorner() throws GameActionException {
 		int myX = hqLoc.x;
 		int myY = hqLoc.y;
