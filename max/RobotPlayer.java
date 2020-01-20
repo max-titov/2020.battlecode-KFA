@@ -16,7 +16,7 @@ public strictfp class RobotPlayer {
 
 	static int turnCount;
 
-	static final int KEY = 626;
+	static final int KEY = 17;
 	
 	static int[] currentMessages;
 	
@@ -163,7 +163,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 200) {
+		if (numMiners < 8) {
 			for (Direction dir : directions)
 				if (tryBuild(RobotType.MINER, dir)) {
 					numMiners++;
@@ -205,8 +205,8 @@ public strictfp class RobotPlayer {
 		//building refineries
 		if(soupLoc != null) {
 			boolean closeToSoup = rc.getLocation().distanceSquaredTo(soupLoc) <= 2;
-			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 36;
-			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 36);
+			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 49;
+			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 49);
 			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 100;
 			if (closeToSoup && 
 					farFromHQ && 
@@ -238,7 +238,7 @@ public strictfp class RobotPlayer {
 		else if (closestSoupMarker != null) { // move towards soup marker
 			desiredLoc = closestSoupMarker;
 		}
-		System.out.println(closestSoupMarker);
+//		System.out.println(closestSoupMarker);
 		
 		Direction desiredDir;
 		if(desiredLoc != null) {
@@ -246,11 +246,11 @@ public strictfp class RobotPlayer {
 		}else {
 			desiredDir = randomDirection();
 		}
-		if(canMoveInDir(desiredDir)) {
+		if(safeToMove(desiredDir)) {
 			rc.move(desiredDir);
 		} else {
 			// bug pathfinding
-			desiredDir = bugPathing(desiredDir);
+			desiredDir = bugPathing3(desiredDir);
 			if(desiredDir != null) {
 				rc.move(desiredDir);
 			}
@@ -424,14 +424,14 @@ public strictfp class RobotPlayer {
 		if(nearestSoup != null) { //if found nearby soup
 			for(int i = 0; i<soupMarkersLen; i++) {
 				if(soupMarkers[i] != null) { 
-					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 100) { //if a marker exists nearby the found soup
+					if(soupMarkers[i].distanceSquaredTo(nearestSoup) <= 36) { //if a marker exists nearby the found soup
 						shouldBroadcastSoup = false; // do not broadcast to blockchain
 					}
 					//rc.setIndicatorDot(soupMarkers[i], 0, 255, 0);
 				}
 			}
 			if(shouldBroadcastSoup) {
-				int[] m = {M_SOUP_MARKER, nearestSoup.x, nearestSoup.y, rc.getID()};
+				int[] m = {M_SOUP_MARKER, nearestSoup.x, nearestSoup.y, rand(), rand(), rc.getID()};
 				sendMessage(m, 1);
 			}
 		}else if(soupLoc == null){ //if no current soup target
@@ -478,6 +478,7 @@ public strictfp class RobotPlayer {
 		for(int i = 0; i<28; i+=4) {
 			if(currentMessages[i] == M_SOUP_MARKER) {
 				newSoupMarkers[newSoupMarkersIndex] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
+				//System.out.println(newSoupMarkers[newSoupMarkersIndex]);
 				newSoupMarkersIndex++;
 			}
 			else if(currentMessages[i] == M_REMOVE_SOUP_MARKER) {
@@ -492,20 +493,22 @@ public strictfp class RobotPlayer {
 			if(soupMarkers[i] != null) {
 				for(int j = 0; j<7; j++) {
 					if(removeSoupMarkers[j] != null && soupMarkers[i].equals(removeSoupMarkers[j])) {
-						removeSoupMarkers[j] = null;
 						soupMarkers[i] = null;
 					}
 				}
 			}
-//			if(soupMarkers[i] != null && removeSoupMarkersIndex < 7 &&  soupMarkers[i].equals(removeSoupMarkers[removeSoupMarkersIndex])) {
-//				soupMarkers[i] = null;
-//				removeSoupMarkersIndex++;
-//			}
 			if(soupMarkers[i] == null && newSoupMarkersIndex < 7 && newSoupMarkers[newSoupMarkersIndex] != null) {
 				soupMarkers[i] = newSoupMarkers[newSoupMarkersIndex];
+				//System.out.println(soupMarkers[i]);
 				newSoupMarkersIndex++;
 			}
 		}
+//		String soups = "";
+//		for(int i = 0; i<soupMarkersLen;i++) {
+//			if(soupMarkers[i]!=null)
+//				soups+=soupMarkers[i].x+","+soupMarkers[i].y+" ";
+//		}
+//		System.out.println(soups);
 		for(int i = 0; i<soupMarkersLen; i++) {
 			if(soupMarkers[i] != null) {
 				rc.setIndicatorDot(soupMarkers[i], 0, 0, 255);
@@ -517,8 +520,8 @@ public strictfp class RobotPlayer {
 		if(closestSoupMarker == null) {
 			return;
 		}
-		if(rc.getLocation().isWithinDistanceSquared(closestSoupMarker, 2) && totalNearbySoup < 100) {
-			int[] m = {M_REMOVE_SOUP_MARKER, closestSoupMarker.x, closestSoupMarker.y, rc.getID()};
+		if(rc.getLocation().isWithinDistanceSquared(closestSoupMarker, 5) && totalNearbySoup < 200) {
+			int[] m = {M_REMOVE_SOUP_MARKER, closestSoupMarker.x, closestSoupMarker.y, rand(),rand(), rc.getID()};
 			closestSoupMarker = null;
 			sendMessage(m, 1);
 		}
@@ -539,13 +542,13 @@ public strictfp class RobotPlayer {
 	}
 	
 	static Direction bugPathing(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
+		if(safeToMove(desiredDir.rotateRight())) {
 			return desiredDir.rotateRight();
 		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+		else if(safeToMove(desiredDir.rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight();
 		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight().rotateRight())) {
+		else if(safeToMove(desiredDir.rotateRight().rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight().rotateRight();
 		}
 		else {
@@ -555,10 +558,10 @@ public strictfp class RobotPlayer {
 	}
 	
 	static Direction bugPathing2(Direction desiredDir) throws GameActionException {
-		if(canMoveInDir(desiredDir.rotateRight())) {
+		if(safeToMove(desiredDir.rotateRight())) {
 			return desiredDir.rotateRight();
 		}
-		else if(canMoveInDir(desiredDir.rotateRight().rotateRight())) {
+		else if(safeToMove(desiredDir.rotateRight().rotateRight())) {
 			return desiredDir.rotateRight().rotateRight();
 		}
 		else {
@@ -567,7 +570,18 @@ public strictfp class RobotPlayer {
 		
 	}
 	
-	static boolean canMoveInDir(Direction dir) throws GameActionException {
+	static Direction bugPathing3(Direction dir) throws GameActionException {
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
+		int len = toTry.length;
+		for(int i = 0; i<len; i++) {
+			if(safeToMove(toTry[i])) {
+				return toTry[i];
+			}
+		}
+		return null;
+	}
+	
+	static boolean safeToMove(Direction dir) throws GameActionException {
 		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
 			return true;
 		}
@@ -578,7 +592,7 @@ public strictfp class RobotPlayer {
 		return getMessages(rc.getRoundNum()-1);
 	}
 	
-	static int[] getMessages(int roundNum) throws GameActionException {
+	static int[] getMessages2(int roundNum) throws GameActionException {
 		int[] messages = new int[28]; //4 per message 7 messages
 		Transaction[] transactions = rc.getBlock(roundNum);
 		int len = transactions.length;
@@ -595,12 +609,54 @@ public strictfp class RobotPlayer {
 		return messages;
 	}
 	
-	static boolean sendMessage(int[] m, int cost) throws GameActionException {
+	static int[] getMessages(int roundNum) throws GameActionException {
+		int[] messages = new int[42]; //6 per message 7 messages
+		Transaction[] transactions = rc.getBlock(roundNum);
+		int len = transactions.length;
+		for(int i = 0; i < len; i++) {
+			if(transactions[i]==null)
+				return messages;
+			int[] m = transactions[i].getMessage();
+			//check if its our message
+			int divisor = m[6]*KEY;
+			boolean ourMessage = true;
+			for(int j = 0; j<6; j++) {
+				if(m[j]%divisor!=0) {
+					ourMessage = false;
+					break;
+				}
+			}
+			//if our message add to messages array
+			if(ourMessage) {
+				for(int j = 0; j<6; j++) {
+					messages[i*6+j] = m[j]/divisor;
+					System.out.println(m[j]/divisor);
+				}
+			}
+		}
+		return messages;
+	}
+	
+	static boolean sendMessage2(int[] m, int cost) throws GameActionException {
 		int int6 = (int)(Math.random()*KEY);
 		int int1 = (int)(Math.random()*(KEY+int6-1));
 		int int0 = KEY+int6-int1;
 		//System.out.println(int0+"+"+int1+"-"+int6);
 		int[] message = {int0,int1,m[0],m[1],m[2],m[3],int6};
+		if(rc.canSubmitTransaction(message, cost)) {
+			rc.submitTransaction(message, cost);
+			return true;
+		}
+		return false;
+	}
+	
+	static boolean sendMessage(int[] m, int cost) throws GameActionException {
+		int encoder = rand();
+		// encode message
+		for(int i = 0; i<6; i++) {
+			m[i] = m[i]* KEY*encoder;
+		}
+		int[] message = {m[0],m[1],m[2],m[3],m[4],m[5],encoder};
 		if(rc.canSubmitTransaction(message, cost)) {
 			rc.submitTransaction(message, cost);
 			return true;
@@ -619,5 +675,13 @@ public strictfp class RobotPlayer {
 	
 	static MapLocation randomLoc() throws GameActionException {
 		return new MapLocation((int)(Math.random()*maxX), (int)(Math.random()*maxY));
+	}
+	
+	static int rand(int max) throws GameActionException {
+		return (int)(Math.random()*max);
+	}
+	
+	static int rand() throws GameActionException {
+		return (int)(Math.random()*500)+1;
 	}
 }
