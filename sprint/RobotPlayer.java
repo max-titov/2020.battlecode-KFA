@@ -127,13 +127,13 @@ public strictfp class RobotPlayer {
 					runDesignSchool();
 					break;
 				case FULFILLMENT_CENTER:
-					runFulfillmentCenter();
+					//runFulfillmentCenter();
 					break;
 				case LANDSCAPER:
 					runLandscaper();
 					break;
 				case DELIVERY_DRONE:
-					runDeliveryDrone();
+					//runDeliveryDrone();
 					break;
 				case NET_GUN:
 					runNetGun();

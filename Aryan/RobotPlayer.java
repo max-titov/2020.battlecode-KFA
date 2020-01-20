@@ -18,9 +18,7 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT2 = 2;
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
-
 	static final int KEY = 626;
-
 
 	// HQ
 
@@ -50,6 +48,7 @@ public strictfp class RobotPlayer {
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
 	static final int M_FOUND_HQ = 8732;
+
 	// NET_GUN
 
 	/**
@@ -91,6 +90,7 @@ public strictfp class RobotPlayer {
 
 	static void runHQ() throws GameActionException {
 		hqLoc = rc.getLocation();
+		//TODO: broadcast hq location to blockchain
 		if(mapCorner == 0) {
 			findCorner();
 		}
@@ -100,10 +100,16 @@ public strictfp class RobotPlayer {
 				rc.shootUnit(ri.getID());
 			}
 		}
+		tryBuild(RobotType.MINER, Direction.NORTH);
 	}
 
 	static void runMiner() throws GameActionException {
-
+		if(rc.getRoundNum() < 5) {
+			tryMove(Direction.EAST);
+		}
+		else {
+			tryBuild(RobotType.FULFILLMENT_CENTER, Direction.NORTH);
+		}
 	}
 
 	static void runRefinery() throws GameActionException {
@@ -208,11 +214,22 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runDefenseDeliveryDrone() throws GameActionException {
+		MapLocation currentLoc = rc.getLocation();
+		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
 		findDefenseCircleCoords();
-		if(!tryMove(rc.getLocation().directionTo(defenseCircleCoords[defenseIndex]))) {
-			if(defenseIndex < defenseCircleCoords.length) {
-				defenseIndex++;
-			}
+		while(currentLoc != desiredLoc) {
+			Direction desiredDir = currentLoc.directionTo(desiredLoc);
+			if(!tryMove(desiredDir)) {
+				if(currentLoc.isAdjacentTo(desiredLoc) && rc.getCurrentSensorRadiusSquared() > 2) {
+					RobotInfo occupiedRobot = rc.senseRobotAtLocation(desiredLoc);
+					if(occupiedRobot.getType() == rc.getType() && occupiedRobot.getTeam() == rc.getTeam()) {
+						desiredLoc = defenseCircleCoords[++defenseIndex];
+					}
+				}
+				else {
+					desiredDir = bugPathing(desiredDir);
+				}
+			} 
 		}
 	}
 
@@ -330,6 +347,32 @@ public strictfp class RobotPlayer {
 				rc.submitTransaction(message, 10);
 		}
 		// System.out.println(rc.getRoundMessages(turnCount-1));
+	}
+
+	static boolean canMoveInDir(Direction dir) throws GameActionException {
+		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+			return true;
+		}
+		return false;
+	}
+
+	static Direction bugPathing(Direction dir) throws GameActionException {
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
+		int len = toTry.length;
+		for(int i = 0; i<len; i++) {
+			if(safeToMove(toTry[i])) {
+				return toTry[i];
+			}
+		}
+		return null;
+
+	}
+
+	static boolean safeToMove(Direction dir) throws GameActionException {
+		if(rc.canMove(dir) && !rc.senseFlooding(rc.getLocation().add(dir))) {
+			return true;
+		}
+		return false;
 	}
 
 	static void findCorner() throws GameActionException {
