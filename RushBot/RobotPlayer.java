@@ -134,7 +134,7 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
-		if (numMiners < 8) {
+		if (numMiners < 4) {
 			for (Direction dir : directions)
 				if (tryBuild(RobotType.MINER, dir)) {
 					numMiners++;
@@ -276,14 +276,16 @@ public strictfp class RobotPlayer {
 	static void runBuilderMiner() throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
 		Direction desiredDir = currentLoc.directionTo(enemyHQLoc);
-		if(currentLoc.x != enemyHQLoc.x+2 || currentLoc.y != enemyHQLoc.y) {
+		if(currentLoc.x != enemyHQLoc.x || currentLoc.y != enemyHQLoc.y+1) {
 			if(!tryMove(desiredDir)) {
 				desiredDir = bugPathing(desiredDir);
 				tryMove(desiredDir);
 			}
 		}
 		else {
-			tryBuild(RobotType.DESIGN_SCHOOL, Direction.WEST);
+			tryBuild(RobotType.DESIGN_SCHOOL, Direction.SOUTHEAST);
+			if(tryMove(Direction.WEST));
+//				minerType = 9999;
 		}
 	}
 
