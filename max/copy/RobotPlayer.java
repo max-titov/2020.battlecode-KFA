@@ -1,4 +1,4 @@
-package max;
+package max.copy;
 
 import battlecode.common.*;
 
@@ -16,7 +16,7 @@ public strictfp class RobotPlayer {
 
 	static int turnCount;
 
-	static final int KEY = 17;
+	static final int KEY = 27;
 	
 	static int[] currentMessages;
 	
@@ -62,7 +62,6 @@ public strictfp class RobotPlayer {
 	
 	static MapLocation schoolLoc = null;
 	static boolean builtSchool = false;
-	static boolean builtWall = false;
 	
 	// REFINERY
 
@@ -74,7 +73,7 @@ public strictfp class RobotPlayer {
 	// FULFILLMENT_CENTER
 
 	// LANDSCAPER
-	static final MapLocation[] hqCircles = {l(1,1),l(1,0),l(1,-1),l(0,-1),l(-1,-1),l(-1,0),l(-1,1),l(0,1),
+	static final MapLocation[] hqCircles = {l(-1,0),l(-1,1),l(0,1),l(1,1),l(1,0),l(1,-1),l(0,-1),l(-1,-1),
 			l(-2,-1),l(-2,1),l(-2,2),l(-1,2),l(1,2),l(2,2),l(2,1),l(2,-1),l(2,-2),l(1,-2),l(-1,-2),l(-2,-2)};
 //	static final MapLocation[] hqCircles = {l(-1,0),l(-1,1),l(0,1),l(1,1),l(1,0),l(1,-1),l(0,-1),l(-1,-1),
 //			l(-2,-1),l(-2,0),l(-2,1),l(-2,2),l(-1,2),l(0,2),l(1,2),l(2,2),l(2,1),l(2,0),l(2,-1),l(2,-2),l(1,-2),l(0,-2),l(-1,-2),l(-2,-2)};
@@ -221,7 +220,7 @@ public strictfp class RobotPlayer {
 			boolean closeToSoup = rc.getLocation().distanceSquaredTo(soupLoc) <= 2;
 			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 16;
 			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 49);
-			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 120;
+			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 400 || soupLoc.distanceSquaredTo(refineryLoc) > 100;
 			if (closeToSoup && 
 					farFromHQ && 
 					farFromRefinery && 
@@ -254,19 +253,14 @@ public strictfp class RobotPlayer {
 		if(nearbySchool != null) {
 			builtSchool |= true;
 		}
-		if(!builtWall) {
-			builtWall = nearbyBotCount(RobotType.LANDSCAPER)>=8;
-		}
 		
 		if(schoolLoc != null && !builtSchool) {
 			desiredLoc = schoolLoc;
 		}else if (rc.getSoupCarrying() >= RobotType.MINER.soupLimit) {		// if full capacity find refinery
 			if (refineryLoc != null) { // if there is a nearby refinery go there
 				desiredLoc = refineryLoc;
-			} else if(!builtWall){ // go the hq
+			} else { // go the hq
 				desiredLoc = hqLoc;
-			} else if(closestSoupMarker != null) {
-				desiredLoc = closestSoupMarker;
 			}
 		}else if (soupLoc != null) { // move towards saved soup location
 			desiredLoc = soupLoc;
@@ -343,7 +337,7 @@ public strictfp class RobotPlayer {
 	static void runDesignSchool() throws GameActionException {
 		findHQ();
 		Direction desiredDir = rc.getLocation().directionTo(hqLoc).rotateLeft();
-		if(landscaperCount < 21 && rc.getTeamSoup() >210) {
+		if(landscaperCount < 20 && rc.getTeamSoup() >210) {
 			for(int i = 0; i < dirsLen; i++) {
 				if(tryBuild(RobotType.LANDSCAPER, desiredDir)) {
 					landscaperCount++;
@@ -388,10 +382,8 @@ public strictfp class RobotPlayer {
 			}
 			MapLocation depositSpot = currentLoc;
 			if(currentLoc.isAdjacentTo(hqLoc)) {//inner landscaper
-				if(nearbyBotCount(RobotType.LANDSCAPER)>10) {
-					depositSpot = lowestWall();
-					if(depositSpot == null)depositSpot= currentLoc;
-				}
+//				depositSpot = lowestWall();
+//				if(depositSpot == null)depositSpot= currentLoc;
 			}else {//outer landscaper
 				if(GameConstants.getWaterLevel(rc.getRoundNum())+2>rc.senseElevation(currentLoc)) { //if water level is close
 					
@@ -909,16 +901,5 @@ public strictfp class RobotPlayer {
 			}
 		}
 		return smallestWall;
-	}
-
-	static int nearbyBotCount(RobotType type) {
-		int count = 0;
-		RobotInfo[] robots = rc.senseNearbyRobots();
-		for (RobotInfo r : robots) {
-			if (r.getType() == type) {
-				count++;
-			}
-		}
-		return count;
 	}
 }
