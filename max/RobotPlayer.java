@@ -23,6 +23,8 @@ public strictfp class RobotPlayer {
 	static Team myTeam;
 	static Team opponent;
 	
+	static MapLocation[] possibleEnemyHQ = {null,null,null};
+	
 	//map size
 	static int minX;
 	static int minY;
@@ -43,6 +45,7 @@ public strictfp class RobotPlayer {
 	static int minerType;
 	static final int SOUP_MINER = 1;
 	static final int BUILDER_MINER = 2;
+	static final int EXPLORER_MINER = 3;
 	
 	static MapLocation[] soupMarkers = new MapLocation[20];
 	static MapLocation closestSoupMarker = null;
@@ -139,12 +142,16 @@ public strictfp class RobotPlayer {
 		}
 	}
 	static void runMiner() throws GameActionException {
+		findHQ();
+		soupStuff();
+		
 		if(minerType == 0) {
-			if(rc.getRoundNum() < 100) {
-				minerType = SOUP_MINER;
+			if(rc.getRoundNum() < 3) {
+				potentialEnemyHQ();
+				minerType = EXPLORER_MINER;
 			}
 			else {
-				minerType = BUILDER_MINER;
+				minerType = SOUP_MINER;
 			}
 		}
 		switch(minerType) {
@@ -154,17 +161,16 @@ public strictfp class RobotPlayer {
 		case BUILDER_MINER:
 			runBuilderMiner();
 			break;
+		case EXPLORER_MINER:
+			runExplorerMiner();
+			break;
 		}
 			
 	}
 	
 	static void runSoupMiner() throws GameActionException {
-		findHQ();
 
-		RobotInfo[] nearbyBots = rc.senseNearbyRobots();
 		MapLocation currentLoc = rc.getLocation();
-
-		soupStuff();
 		
 		RobotInfo nearbyRefineryInfo = nearbyRobot(RobotType.REFINERY, myTeam);
 		if(nearbyRefineryInfo != null) {
@@ -179,7 +185,8 @@ public strictfp class RobotPlayer {
 			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 100;
 			if (closeToSoup && 
 					farFromHQ && 
-					(farFromRefinery && enoughSoup)) {
+					farFromRefinery && 
+					enoughSoup) {
 				Direction dirToSoup = currentLoc.directionTo(soupLoc);
 				tryBuild(RobotType.REFINERY, dirToSoup);
 			}
@@ -228,6 +235,39 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runExplorerMiner() throws GameActionException {
+		MapLocation currentLoc = rc.getLocation();
+		
+		MapLocation desiredLoc = null;
+		int i = 0;
+		for(i = 0; i<possibleEnemyHQ.length;i++) {
+			if(possibleEnemyHQ[i] != null) {
+				desiredLoc = possibleEnemyHQ[i];
+				break;
+			}
+		}
+		
+		if(rc.canSenseLocation(desiredLoc)) {
+			possibleEnemyHQ[i] = null;
+		}
+		
+		RobotInfo enemyHQ = nearbyRobot(RobotType.HQ, opponent);
+		
+		//if no locations left to explore
+		if(desiredLoc == null || enemyHQ != null)  {
+			minerType = SOUP_MINER;
+			runSoupMiner();
+		}
+		
+		Direction desiredDir = currentLoc.directionTo(desiredLoc);
+		if(safeToMove(desiredDir)) {
+			rc.move(desiredDir);
+		} else {
+			// bug pathfinding
+			desiredDir = bugPathing3(desiredDir);
+			if(desiredDir != null) {
+				rc.move(desiredDir);
+			}
+		}
 		
 	}
 	
@@ -357,7 +397,9 @@ public strictfp class RobotPlayer {
 	 * @throws GameActionException
 	 */
 	static boolean tryRefine(Direction dir) throws GameActionException {
-		if (rc.canDepositSoup(dir)) {
+		if(!rc.onTheMap(rc.getLocation().add(dir))) return false;
+		RobotInfo bot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
+		if (rc.canDepositSoup(dir) && bot!= null && bot.getTeam().equals(myTeam)) {
 			rc.depositSoup(dir, rc.getSoupCarrying());
 			return true;
 		} 
@@ -649,8 +691,39 @@ public strictfp class RobotPlayer {
 	static int rand(int max) throws GameActionException {
 		return (int)(Math.random()*max);
 	}
-	
+
 	static int rand() throws GameActionException {
 		return (int)(Math.random()*500)+1;
+	}
+
+	static void potentialEnemyHQ() throws GameActionException {
+		MapLocation mp = new MapLocation(maxX/2, maxY/2);
+			
+		if(hqLoc.x < mp.x) {
+			if(hqLoc.y < mp.y) { //bottom left
+				possibleEnemyHQ[0] = l(hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[1] = l(maxX-hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[2] = l(maxX-hqLoc.x, hqLoc.y);
+			}else { //top left
+				possibleEnemyHQ[0] = l(maxX-hqLoc.x, hqLoc.y);
+				possibleEnemyHQ[1] = l(maxX-hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[2] = l(hqLoc.x, maxY-hqLoc.y);
+			}
+		}else {
+			if(hqLoc.y < mp.y) { //bottom right
+				possibleEnemyHQ[0] = l(maxX-hqLoc.x, hqLoc.y);
+				possibleEnemyHQ[1] = l(maxX-hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[2] = l(hqLoc.x, maxY-hqLoc.y);
+			}else { //top right
+				possibleEnemyHQ[0] = l(hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[1] = l(maxX-hqLoc.x, maxY-hqLoc.y);
+				possibleEnemyHQ[2] = l(maxX-hqLoc.x, hqLoc.y);
+			}
+		}
+		
+	}
+	
+	static MapLocation l(int x, int y) {
+		return new MapLocation(x, y);
 	}
 }
