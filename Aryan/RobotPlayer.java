@@ -92,8 +92,10 @@ public strictfp class RobotPlayer {
 
 	static void runHQ() throws GameActionException {
 		hqLoc = rc.getLocation();
-		int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
-		sendMessage(m, 1);
+		if(rc.getRoundNum() == 0) {
+			int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
+			sendMessage(m, 1);
+		}
 		if(mapCorner == 0) {
 			findCorner();
 		}
