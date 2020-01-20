@@ -511,10 +511,12 @@ public strictfp class RobotPlayer {
 		int nearestSoupDist = 9999;
 		int nearbySoupsLen = nearbySoups.length;
 		for(int i = 0; i < nearbySoupsLen; i++) {
-			totalNearbySoup+=rc.senseSoup(nearbySoups[i]);
-			if(currentLoc.distanceSquaredTo(nearbySoups[i])<nearestSoupDist) {
-				nearestSoup = nearbySoups[i];
-				nearestSoupDist = currentLoc.distanceSquaredTo(nearestSoup);
+			if(!rc.senseFlooding(nearbySoups[i])) {
+				totalNearbySoup+=rc.senseSoup(nearbySoups[i]);
+				if(currentLoc.distanceSquaredTo(nearbySoups[i])<nearestSoupDist) {
+					nearestSoup = nearbySoups[i];
+					nearestSoupDist = currentLoc.distanceSquaredTo(nearestSoup);
+				}
 			}
 		}
 		return nearestSoup;
@@ -620,7 +622,7 @@ public strictfp class RobotPlayer {
 	
 	static Direction bugPathing3(Direction dir) throws GameActionException {
 		//Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.rotateRight(), dir.rotateRight().rotateRight()};
-		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft()};
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateLeft().rotateLeft().rotateLeft()};
 		int len = toTry.length;
 		for(int i = 0; i<len; i++) {
 			if(safeToMove(toTry[i])) {
