@@ -192,7 +192,6 @@ public strictfp class RobotPlayer {
 		}
 	}
 
-
 	static void runDefenseDeliveryDrone() throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
 		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
