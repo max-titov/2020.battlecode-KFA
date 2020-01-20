@@ -204,6 +204,9 @@ public strictfp class RobotPlayer {
 		MapLocation currentLoc = rc.getLocation();
 		findDefenseCircleCoords();
 		MapLocation desiredLoc = defenseCircleCoords[defenseIndex];
+		while(desiredLoc.x < 0 || desiredLoc.y < 0 ||desiredLoc.x > rc.getMapWidth() || desiredLoc.y > rc.getMapHeight()) {
+			desiredLoc = defenseCircleCoords[++defenseIndex];
+		}
 		Direction desiredDir = currentLoc.directionTo(desiredLoc);
 		if(!currentLoc.equals(desiredLoc)) {
 			if(!tryMove(desiredDir)) {
