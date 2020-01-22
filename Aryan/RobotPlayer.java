@@ -221,7 +221,7 @@ public strictfp class RobotPlayer {
 					}
 				}
 				else {
-					desiredDir = bugPathing(desiredDir);
+					desiredDir = bugPathing3(desiredDir);
 					if(desiredDir != null) {
 						tryMove(desiredDir);
 					}
@@ -353,7 +353,7 @@ public strictfp class RobotPlayer {
 		return false;
 	}
 
-	static Direction bugPathing(Direction dir) throws GameActionException {
+	static Direction bugPathing3(Direction dir) throws GameActionException {
 		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
 		int len = toTry.length;
 		for(int i = 0; i<len; i++) {
@@ -500,9 +500,9 @@ public strictfp class RobotPlayer {
 		if (defenseCircleCoords == null){
 			defenseCircleCoords = new MapLocation[16];
 			int index = 0;
-			for(int i = -2; i <= 2; i++) {
-				for(int j = -2; j <= 2; j++) {
-					if(Math.abs(i) == 2 || Math.abs(j) == 2) {
+			for(int i = -3; i <= 3; i++) {
+				for(int j = -3; j <= 3; j++) {
+					if(Math.abs(i) == 3 || Math.abs(j) == 3) {
 						defenseCircleCoords[index++] = new MapLocation(hqLoc.x+i, hqLoc.y+j);
 					}
 				}
