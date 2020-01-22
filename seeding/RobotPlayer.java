@@ -1,4 +1,4 @@
-package max;
+package seeding;
 
 import battlecode.common.*;
 
