@@ -1,4 +1,4 @@
-package nathan;
+package nathan.old;
 
 import battlecode.common.*;
 
