@@ -1,4 +1,4 @@
-package max.copy;
+package seeding;
 
 import battlecode.common.*;
 
@@ -16,7 +16,7 @@ public strictfp class RobotPlayer {
 
 	static int turnCount;
 
-	static final int KEY = 27;
+	static final int KEY = 17;
 	
 	static int[] currentMessages;
 	
@@ -168,7 +168,7 @@ public strictfp class RobotPlayer {
 			MapLocation desiredSchoolLoc = null;
 			for(int i = 0; i<dirsLen; i+=2) {
 				MapLocation testLoc = hqLoc.add(directions[i]).add(directions[i]).add(directions[i]);
-				if(rc.onTheMap(testLoc) && !rc.senseFlooding(testLoc)) {
+				if(rc.onTheMap(testLoc) && !rc.senseFlooding(testLoc) && Math.abs(rc.senseElevation(testLoc)-rc.senseElevation(hqLoc))<=9) {
 					desiredSchoolLoc = testLoc;
 					break;
 				}
@@ -781,10 +781,14 @@ public strictfp class RobotPlayer {
 			//check if its our message
 			int divisor = m[6]*KEY;
 			boolean ourMessage = true;
-			for(int j = 0; j<6; j++) {
-				if(m[j]%divisor!=0) {
-					ourMessage = false;
-					break;
+			if(m[6] == 0) {
+				ourMessage=false;
+			}else {
+				for(int j = 0; j<6; j++) {
+					if(m[j]%divisor!=0) {
+						ourMessage = false;
+						break;
+					}
 				}
 			}
 			//if our message add to messages array
@@ -921,4 +925,5 @@ public strictfp class RobotPlayer {
 		}
 		return count;
 	}
+
 }
