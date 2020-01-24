@@ -6,29 +6,37 @@ public class Robot {
     Communications comms;
 
     int turnCount = 0;
+    int[] currentMessages;
+    Team myTeam;
+    Team opponent;
 
     public Robot(RobotController r) {
         this.rc = r;
         comms = new Communications(rc);
+        myTeam = rc.getTeam();
+        opponent = myTeam.opponent();
     }
 
     public void takeTurn() throws GameActionException {
         turnCount += 1;
+		currentMessages = comms.getMessages();
     }
 
-    /**
-     * Attempts to build a given robot in a given direction.
-     *
-     * @param type The type of the robot to build
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
-        if (rc.isReady() && rc.canBuildRobot(type, dir)) {
+        if (rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
             return true;
         }
         return false;
     }
+    
+	RobotInfo nearbyRobot(RobotType target, Team team) throws GameActionException {
+		RobotInfo[] robots = rc.senseNearbyRobots();
+		for (RobotInfo r : robots) {
+			if (r.getType() == target && r.team == team) {
+				return r;
+			}
+		}
+		return null;
+	}
 }

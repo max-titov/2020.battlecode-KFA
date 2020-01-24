@@ -5,92 +5,111 @@ import java.util.ArrayList;
 public class Communications {
     RobotController rc;
 
-    // state related only to communications should go here
-
-    // all messages from our team should start with this so we can tell them apart
-    static final int teamSecret = 444444444;
-    // the second entry in every message tells us what kind of message it is. e.g. 0 means it contains the HQ location
-    static final String[] messageType = {
-        "HQ loc",
-        "design school created",
-        "soup location",
-    };
+	static final int KEY = 17;
+	
+	//messages
+	static final int M_HQ_LOC = 384;
+	static final int M_SOUP_MARKER = 804;
+	static final int M_REMOVE_SOUP_MARKER = 947;
+	static final int M_BUILD_SCHOOL = 283;
 
     public Communications(RobotController r) {
         rc = r;
     }
+    ///////INTERACTING WITH BLOCKCHAIN/////////
+	
+	public int[] getMessages(int roundNum) throws GameActionException {
+		int[] messages = new int[42]; //6 per message 7 messages
+		Transaction[] transactions = rc.getBlock(roundNum);
+		int len = transactions.length;
+		for(int i = 0; i < len; i++) {
+			if(transactions[i]==null)
+				return messages;
+			int[] m = transactions[i].getMessage();
+			//check if its our message
+			int divisor = m[6]*KEY; //divide by this to decrypt
+			boolean ourMessage = true;
+			if(m[6] == 0) {
+				ourMessage=false;
+			}else {
+				for(int j = 0; j<6; j++) {
+					if(m[j]%divisor!=0) {
+						ourMessage = false;
+						break;
+					}
+				}
+			}
+			//if our message add to messages array
+			if(ourMessage) {
+				for(int j = 0; j<6; j++) {
+					messages[i*6+j] = m[j]/divisor;
+				}
+			}
+		}
+		return messages;
+	}
+	
+	public int[] getMessages() throws GameActionException {
+		return getMessages(rc.getRoundNum()-1);
+	}
+	
+	public boolean sendMessage(int[] m, int cost) throws GameActionException {
+		int encoder = Util.rand(500);
+		// encode message
+		for(int i = 0; i<6; i++) {
+			m[i] = m[i]* KEY*encoder;
+		}
+		int[] message = {m[0],m[1],m[2],m[3],m[4],m[5],encoder};
+		if(rc.canSubmitTransaction(message, cost)) {
+			rc.submitTransaction(message, cost);
+			return true;
+		}
+		return false;
+	}
+	
+	public int[] checkForMessage(int tag, int roundNum) throws GameActionException {
+		int[] m = getMessages();
+		for(int i = 0; i<m.length; i+=6) {
+			if(m[i] == tag) {
+				int[] ret = {m[i+1],m[i+2],m[i+3],m[i+4],m[i+5]};
+				return ret;
+			}
+		}
+		return null;
+	}
+	
+	public int[] checkForMessage(int tag) throws GameActionException {
+		return checkForMessage(tag, rc.getRoundNum()-1);
+	}
 
-    public void sendHqLoc(MapLocation loc) throws GameActionException {
-        int[] message = new int[7];
-        message[0] = teamSecret;
-        message[1] = 0;
-        message[2] = loc.x; // x coord of HQ
-        message[3] = loc.y; // y coord of HQ
-        if (rc.canSubmitTransaction(message, 3))
-            rc.submitTransaction(message, 3);
-    }
-
+	//////////METHODS FOR ROBOTS/////////////
+	
+	public void sendHqLoc(MapLocation loc) throws GameActionException {
+		if(rc.getRoundNum() == 0 || rc.getRoundNum() == 1 || rc.getRoundNum() == 2) { //redundancy
+			int[] m = {M_HQ_LOC, loc.x, loc.y, Util.rand(),Util.rand(),Util.rand()};
+			sendMessage(m, 1);
+		}
+	}
+	
     public MapLocation getHqLocFromBlockchain() throws GameActionException {
-        for (int i = 1; i < rc.getRoundNum(); i++){
-            for(Transaction tx : rc.getBlock(i)) {
-                int[] mess = tx.getMessage();
-                if(mess[0] == teamSecret && mess[1] == 0){
-                    System.out.println("found the HQ!");
-                    return new MapLocation(mess[2], mess[3]);
-                }
-            }
-        }
-        return null;
+    	for(int i = 0; i < 3; i++) {
+			int[] m = checkForMessage(M_HQ_LOC, i);
+			if(m != null) {
+				return new MapLocation(m[0],m[1]);
+			}
+    	}
+		return null;
     }
 
-    public boolean broadcastedCreation = false;
-    public void broadcastDesignSchoolCreation(MapLocation loc) throws GameActionException {
-        if(broadcastedCreation) return; // don't re-broadcast
-
-        int[] message = new int[7];
-        message[0] = teamSecret;
-        message[1] = 1;
-        message[2] = loc.x; // x coord of HQ
-        message[3] = loc.y; // y coord of HQ
-        if (rc.canSubmitTransaction(message, 3)) {
-            rc.submitTransaction(message, 3);
-            broadcastedCreation = true;
-        }
+    public void sendDesiredSchoolPlacement(MapLocation loc) throws GameActionException {
+    	int[] m = {M_BUILD_SCHOOL, loc.x, loc.y, Util.rand(),Util.rand(),Util.rand()};
+		sendMessage(m, 1);
     }
 
-    // check the latest block for unit creation messages
-    public int getNewDesignSchoolCount() throws GameActionException {
-        int count = 0;
-        for(Transaction tx : rc.getBlock(rc.getRoundNum() - 1)) {
-            int[] mess = tx.getMessage();
-            if(mess[0] == teamSecret && mess[1] == 1){
-                System.out.println("heard about a cool new school");
-                count += 1;
-            }
-        }
-        return count;
-    }
-
-    public void broadcastSoupLocation(MapLocation loc ) throws GameActionException {
-        int[] message = new int[7];
-        message[0] = teamSecret;
-        message[1] = 2;
-        message[2] = loc.x; // x coord of HQ
-        message[3] = loc.y; // y coord of HQ
-        if (rc.canSubmitTransaction(message, 3)) {
-            rc.submitTransaction(message, 3);
-            System.out.println("new soup!" + loc);
-        }
-    }
-
-    public void updateSoupLocations(ArrayList<MapLocation> soupLocations) throws GameActionException {
-        for(Transaction tx : rc.getBlock(rc.getRoundNum() - 1)) {
-            int[] mess = tx.getMessage();
-            if(mess[0] == teamSecret && mess[1] == 2){
-                // TODO: don't add duplicate locations
-                System.out.println("heard about a tasty new soup location");
-                soupLocations.add(new MapLocation(mess[2], mess[3]));
-            }
-        }
+    public MapLocation getDesiredSchoolPlacement() throws GameActionException {
+    	int[] m = checkForMessage(M_BUILD_SCHOOL);
+    	if(m == null)
+    		return null;
+    	return new MapLocation(m[0],m[1]);
     }
 }

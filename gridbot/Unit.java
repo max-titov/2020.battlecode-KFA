@@ -6,6 +6,8 @@ public class Unit extends Robot {
     Navigation nav;
 
     MapLocation hqLoc;
+    
+    Grid grid;
 
     public Unit(RobotController r) {
         super(r);
@@ -13,9 +15,11 @@ public class Unit extends Robot {
     }
 
     public void takeTurn() throws GameActionException {
-        super.takeTurn();
-        
+        super.takeTurn();       
         findHQ();
+        if(grid == null) {
+        	grid = new Grid(hqLoc);
+        }
     }
 
     public void findHQ() throws GameActionException {
@@ -25,12 +29,11 @@ public class Unit extends Robot {
             for (RobotInfo robot : robots) {
                 if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
                     hqLoc = robot.location;
+                    return;
                 }
             }
-            if(hqLoc == null) {
-                // if still null, search the blockchain
-                hqLoc = comms.getHqLocFromBlockchain();
-            }
+            // if still null, search the blockchain
+            hqLoc = comms.getHqLocFromBlockchain();
         }
     }
 }

@@ -8,14 +8,10 @@ public class DesignSchool extends Building {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        
-        // will only actually happen if we haven't already broadcasted the creation
-        comms.broadcastDesignSchoolCreation(rc.getLocation());
-
-        for (Direction dir : Util.directions) {
-            if(tryBuild(RobotType.LANDSCAPER, dir)) {
-                System.out.println("made a landscaper");
-            }
+        for(int i = 0; i < Util.dirsLen; i++) {
+			if(tryBuild(RobotType.LANDSCAPER, Util.dirs[i])) {
+				
+			}
         }
     }
 }
