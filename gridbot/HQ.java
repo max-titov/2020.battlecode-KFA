@@ -11,7 +11,7 @@ public class HQ extends Shooter {
         super(r);
         hqLoc = rc.getLocation();
         hqElevation = rc.senseElevation(hqLoc);
-        comms.sendHqLoc(hqLoc);
+        comms.sendHQLoc(hqLoc);
     }
 
     public void takeTurn() throws GameActionException {
@@ -19,7 +19,7 @@ public class HQ extends Shooter {
         int round = rc.getRoundNum();
         
         if(round<=2) { //sends several times for redundecy purposes
-        	comms.sendHqLoc(rc.getLocation());
+        	comms.sendHQLoc(rc.getLocation());
         }
 
         if(numMiners < 5) {

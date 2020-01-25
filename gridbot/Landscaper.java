@@ -2,8 +2,7 @@ package gridbot;
 import battlecode.common.*;
 
 public class Landscaper extends Unit {
-	static int landHeight = 10;
-	
+	int landHeight = 10;
 	Direction preferedDir;
 	int landscaperType = 0;
 	final int GRID_LANDSCAPER = 1;

@@ -4,12 +4,17 @@ import battlecode.common.*;
 public class Navigation {
     RobotController rc;
 
-	static int prevLocsSize = 5;
-	static MapLocation[] prevLocs = new MapLocation[prevLocsSize];
-	static int prevLocsIndex = 0;
+	final int MAP_WIDTH;
+	final int MAP_HEIGHT;
+    
+	int prevLocsSize = 5;
+	MapLocation[] prevLocs = new MapLocation[prevLocsSize];
+	int prevLocsIndex = 0;
 
     public Navigation(RobotController r) {
         rc = r;
+        MAP_WIDTH = rc.getMapWidth();
+        MAP_HEIGHT = rc.getMapHeight();
     }
     
     boolean tryMove(Direction dir) throws GameActionException {

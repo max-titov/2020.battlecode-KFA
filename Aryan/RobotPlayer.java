@@ -234,10 +234,12 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runAttackDeliveryDrone() throws GameActionException {
-		for (RobotInfo ri : rc.senseNearbyRobots()) {
-			int ID = ri.getID();
-			if(ri.getTeam() == rc.getTeam() && rc.getType() == RobotType.LANDSCAPER && rc.canPickUpUnit(ID)) {
-				rc.pickUpUnit(ID);
+		if(!rc.isCurrentlyHoldingUnit()) {
+			for (RobotInfo ri : rc.senseNearbyRobots(2, rc.getTeam().opponent())) {
+				int ID = ri.getID();
+				if(ri.getTeam() == rc.getTeam() && rc.getType() == RobotType.LANDSCAPER && rc.canPickUpUnit(ID)) {
+					rc.pickUpUnit(ID);
+				}
 			}
 		}
 		//TODO: check blockchain for ready attack

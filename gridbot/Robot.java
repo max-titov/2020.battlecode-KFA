@@ -4,16 +4,20 @@ import battlecode.common.*;
 public class Robot {
     RobotController rc;
     Communications comms;
-
     int turnCount = 0;
     int[] currentMessages;
+    int currentSensorRadius;
+    RobotType myType;
     Team myTeam;
     Team opponent;
     MapLocation hqLoc;
+    MapLocation enemyHQLoc;
+    MapLocation currentLoc;
 
     public Robot(RobotController r) {
         this.rc = r;
         comms = new Communications(rc);
+        myType = rc.getType();
         myTeam = rc.getTeam();
         opponent = myTeam.opponent();
     }
@@ -21,6 +25,8 @@ public class Robot {
     public void takeTurn() throws GameActionException {
         turnCount += 1;
 		currentMessages = comms.getMessages();
+		currentLoc = rc.getLocation();
+        currentSensorRadius = rc.getCurrentSensorRadiusSquared();
     }
 
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
@@ -51,8 +57,12 @@ public class Robot {
                     return;
                 }
             }
-            // if still null, search the blockchain
-            hqLoc = comms.getHqLocFromBlockchain();
+            hqLoc = comms.getHQLocFromBlockchain();
         }
     }
+    
+    public void findEnemyHQ() throws GameActionException {
+    	enemyHQLoc = comms.getEnemyHQLocFromBlockchain();
+    }
+    
 }

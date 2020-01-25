@@ -13,8 +13,7 @@ public class Unit extends Robot {
     }
 
     public void takeTurn() throws GameActionException {
-        super.takeTurn();       
-        findHQ();
+        super.takeTurn();  
         if(grid == null) {
         	grid = new Grid(hqLoc);
         }

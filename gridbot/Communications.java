@@ -5,13 +5,13 @@ import java.util.ArrayList;
 public class Communications {
     RobotController rc;
 
-	static final int KEY = 37;
+	final int KEY = 37;
 	
 	//messages
-	static final int M_HQ_LOC = 384;
-	static final int M_SOUP_MARKER = 804;
-	static final int M_REMOVE_SOUP_MARKER = 947;
-	static final int M_BUILD_SCHOOL = 283;
+	final int M_HQ_LOC = 384;
+	final int M_SOUP_MARKER = 804;
+	final int M_REMOVE_SOUP_MARKER = 947;
+	final int M_BUILD_SCHOOL = 283;
 
     public Communications(RobotController r) {
         rc = r;
@@ -84,14 +84,18 @@ public class Communications {
 
 	//////////METHODS FOR ROBOTS/////////////
 	
-	public void sendHqLoc(MapLocation loc) throws GameActionException {
+	public void sendHQLoc(MapLocation loc) throws GameActionException {
 		if(rc.getRoundNum() == 0 || rc.getRoundNum() == 1 || rc.getRoundNum() == 2) { //redundancy
 			int[] m = {M_HQ_LOC, loc.x, loc.y, Util.rand(),Util.rand(),Util.rand()};
 			sendMessage(m, 1);
 		}
 	}
 	
-    public MapLocation getHqLocFromBlockchain() throws GameActionException {
+	public void sendEnemyHQLoc(MapLocation loc) throws GameActionException {
+		//TODO: finish method
+	}
+	
+    public MapLocation getHQLocFromBlockchain() throws GameActionException {
     	for(int i = 0; i < 3; i++) {
 			int[] m = checkForMessage(M_HQ_LOC, i);
 			if(m != null) {
@@ -99,6 +103,11 @@ public class Communications {
 			}
     	}
 		return null;
+    }
+    
+    public MapLocation getEnemyHQLocFromBlockchain() throws GameActionException {
+    	//TODO: finish method
+    	return null;
     }
 
     public void sendDesiredSchoolPlacement(MapLocation loc) throws GameActionException {

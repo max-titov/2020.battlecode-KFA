@@ -10,33 +10,15 @@ public strictfp class RobotPlayer {
         Robot me = null;
 
         switch (rc.getType()) {
-            case HQ:                 
-            	me = new HQ(rc);           
-            	break;
-            case MINER:              
-            	me = new Miner(rc);        
-            	break;
-            case REFINERY:           
-            	me = new Refinery(rc);     
-            	break;
-            case VAPORATOR:          
-            	me = new Vaporator(rc);    
-            	break;
-            case DESIGN_SCHOOL:      
-            	me = new DesignSchool(rc); 
-            	break;
-            case FULFILLMENT_CENTER: 
-            	me = new FulfillmentCenter(rc);     
-            	break;
-            case LANDSCAPER:         
-            	me = new Landscaper(rc);   
-            	break;
-            case DELIVERY_DRONE:     
-            	me = new Drone(rc);        
-            	break;
-            case NET_GUN:            
-            	me = new Shooter(rc);      
-            	break;
+		case HQ:                 me = new HQ(rc);					break;
+		case MINER:              me = new Miner(rc);				break;
+		case REFINERY:           me = new Refinery(rc);				break;
+		case VAPORATOR:          me = new Vaporator(rc);			break;
+		case DESIGN_SCHOOL:      me = new DesignSchool(rc); 		break;
+		case FULFILLMENT_CENTER: me = new FulfillmentCenter(rc);	break;
+		case LANDSCAPER:         me = new Landscaper(rc); 			break;
+		case DELIVERY_DRONE:     me = new Drone(rc); 				break;
+		case NET_GUN:            me = new Shooter(rc); 				break;
         }
 
         while(true) {
