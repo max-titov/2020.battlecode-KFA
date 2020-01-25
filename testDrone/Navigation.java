@@ -1,4 +1,4 @@
-package gridbot;
+package testDrone;
 import battlecode.common.*;
 
 public class Navigation {

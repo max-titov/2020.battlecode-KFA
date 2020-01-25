@@ -1,4 +1,4 @@
-package gridbot;
+package testDrone;
 import battlecode.common.*;
 
 public class Drone extends Unit {
@@ -21,8 +21,9 @@ public class Drone extends Unit {
 
 	public Drone(RobotController r) throws GameActionException{
 		super(r);
-		hqLoc = comms.getHQLocFromBlockchain();
-		findPotentialEnemyHQ();
+		if(possibleEnemyHQ == null) {
+			findPotentialEnemyHQ();
+		}
 	}
 
 	public void takeTurn() throws GameActionException {
@@ -180,6 +181,7 @@ public class Drone extends Unit {
 
 	void findPotentialEnemyHQ() throws GameActionException {
 		MapLocation mp = nav.l(nav.MAP_WIDTH/2, nav.MAP_HEIGHT/2);
+		System.out.println(hqLoc);
 		if(hqLoc.x < mp.x) {
 			if(hqLoc.y < mp.y) { //bottom left
 				possibleEnemyHQ[2] = nav.l(hqLoc.x, nav.MAP_HEIGHT-hqLoc.y);

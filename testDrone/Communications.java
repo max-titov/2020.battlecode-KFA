@@ -1,4 +1,4 @@
-package gridbot;
+package testDrone;
 import battlecode.common.*;
 import java.util.ArrayList;
 
