@@ -13,6 +13,15 @@ public class Communications {
 	static final int M_REMOVE_SOUP_MARKER = 947;
 	static final int M_BUILD_SCHOOL = 283;
 
+	//robot type
+	static final int M_LANDSCAPER = 44;
+	static final int M_DRONE = 29;
+	static final int M_VAPORATOR = 93;
+	static final int M_SCHOOL = 48;
+	static final int M_FULFILLMENT_CENTER = 39;
+	
+	static final int M_ROBOT_COUNTS = 72;
+	
     public Communications(RobotController r) {
         rc = r;
     }
@@ -111,5 +120,29 @@ public class Communications {
     	if(m == null)
     		return null;
     	return new MapLocation(m[0],m[1]);
+    }
+    
+    public void broadcastCreation() throws GameActionException {
+    	int type = 0;
+    	RobotType t = rc.getType();
+    	if(t.equals(RobotType.LANDSCAPER)) {
+    		type = M_LANDSCAPER;
+    	} else if(t.equals(RobotType.DELIVERY_DRONE)) {
+    		type = M_DRONE;
+    	} else if(t.equals(RobotType.VAPORATOR)) {
+    		type = M_VAPORATOR;
+    	} else if(t.equals(RobotType.DESIGN_SCHOOL)) {
+    		type = M_SCHOOL;
+    	} else {
+    		type = M_FULFILLMENT_CENTER;
+    	}
+    	int[] m = {type, Util.rand(), Util.rand(), Util.rand(), Util.rand(), Util.rand()};
+    	sendMessage(m, 1);
+    	
+    }
+    
+    public void broadcastRobotCounts(int[] m) throws GameActionException {
+    	m[0] = M_ROBOT_COUNTS;
+    	sendMessage(m, 1);
     }
 }

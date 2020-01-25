@@ -10,6 +10,12 @@ public class Robot {
     Team myTeam;
     Team opponent;
     MapLocation hqLoc;
+    
+    int landscaperCount = 0;
+    int droneCount = 0;
+    int vaporatorCount = 0;
+    int schoolCount = 0;
+    int fulfillmentCenterCount = 0;
 
     public Robot(RobotController r) {
         this.rc = r;
@@ -41,7 +47,12 @@ public class Robot {
 		return null;
 	}
 	
-    public void findHQ() throws GameActionException {
+	RobotType buildPriority() throws GameActionException {
+		
+		return null;
+	}
+	
+    void findHQ() throws GameActionException {
         if (hqLoc == null) {
             // search surroundings for HQ
             RobotInfo[] robots = rc.senseNearbyRobots();
@@ -55,4 +66,14 @@ public class Robot {
             hqLoc = comms.getHqLocFromBlockchain();
         }
     }
+    
+    void updateRobotCounts() throws GameActionException {
+    	int[] m = comms.checkForMessage(comms.M_ROBOT_COUNTS);
+    	landscaperCount = m[0];
+    	droneCount = m[1];
+    	vaporatorCount = m[2];
+    	schoolCount = m[3];
+    	fulfillmentCenterCount = m[4];
+    }
+    
 }
