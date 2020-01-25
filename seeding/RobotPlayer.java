@@ -152,6 +152,11 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runHQ() throws GameActionException {
+		for (RobotInfo ri : rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, rc.getTeam().opponent())) {
+			if (rc.canShootUnit(ri.getID())) {
+				rc.shootUnit(ri.getID());
+			}
+		}
 		hqLoc = rc.getLocation();
 		if(rc.getRoundNum() == 1) {
 			int[] m = {M_HQ_LOC, hqLoc.x, hqLoc.y, rand(),rand(),rand()};
@@ -730,7 +735,7 @@ public strictfp class RobotPlayer {
 		return null;
 	}
 	
-	static void bugPathing4(Direction dir) throws GameActionException {
+	static Direction bugPathing4(Direction dir) throws GameActionException {
 		MapLocation currentLoc = rc.getLocation();
 		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateLeft().rotateLeft().rotateLeft(), dir.rotateRight().rotateRight().rotateRight(), dir.opposite()};
 		int lenToTry = toTry.length;
@@ -748,15 +753,15 @@ public strictfp class RobotPlayer {
 				}
 			}
 			if(!movedThereAlready && safeToMove(toTry[i])) {
-				rc.move(toTry[i]);
 				prevLocs[prevLocsIndex] = currentLoc;
 				prevLocsIndex=(prevLocsIndex+1)%prevLocs.length;
-				return;
+				return toTry[i];
 			}
 		}
 		//if cant move reset previous locations array
 		prevLocs = new MapLocation[preLocsSize];
 		prevLocsIndex=0;
+		return null;
 	}
 	
 	static boolean safeToMove(Direction dir) throws GameActionException {

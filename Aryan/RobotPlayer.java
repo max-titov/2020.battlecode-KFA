@@ -19,8 +19,12 @@ public strictfp class RobotPlayer {
 	static final int QUADRANT3 = 3;
 	static final int QUADRANT4 = 4;
 	static final int KEY = 23;
-
 	static final int M_HQ_LOC = 898;
+
+	//Navigation
+	static int preLocsSize = 5;
+	static MapLocation[] prevLocs = new MapLocation[preLocsSize];
+	static int prevLocsIndex = 0;
 
 	// HQ
 	static boolean builtMiner;
@@ -38,19 +42,18 @@ public strictfp class RobotPlayer {
 	// LANDSCAPER
 
 	// DELIVERY DRONE
-	static final int SCOUT_DRONE = 1;
-	static final int DEFENSE_DRONE = 2;
-	static final int ATTACK_DRONE = 3;
+	static final int DEFENSE_DRONE = 1;
+	static final int ATTACK_DRONE = 2;
 	static int droneType;
 	static Direction heading;
 	static MapLocation targetLoc;
 	static boolean readyAttack;
-	static boolean readyDefense;
+	static boolean readyDefense = true;
 	static MapLocation fulfillmentLoc;
 	static MapLocation[] defenseCircleCoords;
 	static int defenseIndex;
 	static final int M_FOUND_ENEMY_HQ = 732;
-
+	static RobotInfo currentlyHolding;
 	// NET_GUN
 
 	/**
@@ -221,7 +224,7 @@ public strictfp class RobotPlayer {
 					}
 				}
 				else {
-					desiredDir = bugPathing3(desiredDir);
+					desiredDir = bugPathing4(desiredDir);
 					if(desiredDir != null) {
 						tryMove(desiredDir);
 					}
@@ -231,6 +234,46 @@ public strictfp class RobotPlayer {
 	}
 
 	static void runAttackDeliveryDrone() throws GameActionException {
+		for (RobotInfo ri : rc.senseNearbyRobots()) {
+			int ID = ri.getID();
+			if(ri.getTeam() == rc.getTeam() && rc.getType() == RobotType.LANDSCAPER && rc.canPickUpUnit(ID)) {
+				rc.pickUpUnit(ID);
+			}
+		}
+		//TODO: check blockchain for ready attack
+		MapLocation currentLoc = rc.getLocation();
+		enemyHQLoc = new MapLocation(35,26);
+		//TODO: get enemy HQ location from blockchain
+		Direction dir = currentLoc.directionTo(enemyHQLoc);
+		int distanceToHQ = currentLoc.add(dir).distanceSquaredTo(enemyHQLoc);
+		if(distanceToHQ > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+			if(!tryMove(dir)) {
+				tryMove(bugPathing4(dir));
+			}
+		}
+		else {
+			if(!readyAttack) {
+				tryMove(dir.rotateRight().rotateRight());
+			}
+			else {
+				if(!rc.isCurrentlyHoldingUnit()) {
+					for (RobotInfo ri : rc.senseNearbyRobots(2, rc.getTeam().opponent())) {
+						if(rc.canPickUpUnit(ri.getID())) {
+							rc.pickUpUnit(ri.getID());
+							currentlyHolding = ri;
+						}
+					}
+					if(!rc.isCurrentlyHoldingUnit()) {
+						if(!tryMove(dir)) {
+							tryMove(bugPathing4(dir));
+						}
+					}
+				}
+				if(currentlyHolding.getTeam() == rc.getTeam() && currentlyHolding.getType() == RobotType.LANDSCAPER && distanceToHQ <= 2) {
+					
+				}
+			}
+		}
 	}
 
 	static void runNetGun() throws GameActionException {
@@ -353,16 +396,31 @@ public strictfp class RobotPlayer {
 		return false;
 	}
 
-	static Direction bugPathing3(Direction dir) throws GameActionException {
-		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight()};
-		int len = toTry.length;
-		for(int i = 0; i<len; i++) {
-			if(safeToMove(toTry[i])) {
+	static Direction bugPathing4(Direction dir) throws GameActionException {
+		MapLocation currentLoc = rc.getLocation();
+		Direction[] toTry = {dir, dir.rotateLeft(), dir.rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateLeft().rotateLeft().rotateLeft(), dir.rotateRight().rotateRight().rotateRight(), dir.opposite()};
+		int lenToTry = toTry.length;
+		for(int i = 0; i<lenToTry; i++) {
+			boolean movedThereAlready = false;
+			int len = prevLocs.length+prevLocsIndex;
+			for(int j = prevLocsIndex;j<len; j++) {
+				MapLocation testLoc = prevLocs[j%prevLocs.length];
+				if(testLoc!= null) {
+					if(currentLoc.add(toTry[i]).equals(testLoc)) {
+						movedThereAlready=true;
+						break;
+					}
+				}
+			}
+			if(!movedThereAlready && safeToMove(toTry[i])) {
+				prevLocs[prevLocsIndex] = currentLoc;
+				prevLocsIndex=(prevLocsIndex+1)%prevLocs.length;
 				return toTry[i];
 			}
 		}
+		prevLocs = new MapLocation[preLocsSize];
+		prevLocsIndex=0;
 		return null;
-
 	}
 
 	static boolean safeToMove(Direction dir) throws GameActionException {
