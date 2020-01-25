@@ -2,71 +2,126 @@ package gridbot;
 import battlecode.common.*;
 
 public class Landscaper extends Unit {
-
-    public Landscaper(RobotController r) {
+	static int landHeight = 10;
+	
+	Direction preferedDir;
+	int landscaperType = 0;
+	final int GRID_LANDSCAPER = 1;
+    public Landscaper(RobotController r) throws GameActionException {
         super(r);
+        preferedDir = Util.dirs[Util.rand(8)];
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-
-        // first, save HQ by trying to remove dirt from it
-        if (hqLoc != null && hqLoc.isAdjacentTo(rc.getLocation())) {
-            Direction dirtohq = rc.getLocation().directionTo(hqLoc);
-            if(rc.canDigDirt(dirtohq)){
-                rc.digDirt(dirtohq);
-            }
-        }
-
-        if(rc.getDirtCarrying() == 0){
-            tryDig();
-        }
-
-        MapLocation bestPlaceToBuildWall = null;
-        // find best place to build
-        if(hqLoc != null) {
-            int lowestElevation = 9999999;
-            for (Direction dir : Util.directions) {
-                MapLocation tileToCheck = hqLoc.add(dir);
-                if(rc.getLocation().distanceSquaredTo(tileToCheck) < 4
-                        && rc.canDepositDirt(rc.getLocation().directionTo(tileToCheck))) {
-                    if (rc.senseElevation(tileToCheck) < lowestElevation) {
-                        lowestElevation = rc.senseElevation(tileToCheck);
-                        bestPlaceToBuildWall = tileToCheck;
-                    }
-                }
-            }
-        }
-
-        if (Math.random() < 0.8){
-            // build the wall
-            if (bestPlaceToBuildWall != null) {
-                rc.depositDirt(rc.getLocation().directionTo(bestPlaceToBuildWall));
-                rc.setIndicatorDot(bestPlaceToBuildWall, 0, 255, 0);
-                System.out.println("building a wall");
-            }
-        }
-
-        // otherwise try to get to the hq
-        if(hqLoc != null){
-            nav.goTo(hqLoc);
-        } else {
-            nav.goTo(Util.randomDirection());
+        if(landscaperType == 0) {
+			landscaperType = GRID_LANDSCAPER;
+		}
+        
+        switch (landscaperType) {
+        case GRID_LANDSCAPER:
+        	runGridLandscaper();
+        	break;
         }
     }
-
-    boolean tryDig() throws GameActionException {
-        Direction dir;
-        if(hqLoc == null){
-            dir = Util.randomDirection();
-        } else {
-            dir = hqLoc.directionTo(rc.getLocation());
-        }
-        if(rc.canDigDirt(dir)){
-            rc.digDirt(dir);
-            rc.setIndicatorDot(rc.getLocation().add(dir), 255, 0, 0);
-            return true;
-        }
-        return false;
+    
+    void runGridLandscaper() throws GameActionException {
+    	MapLocation currentLoc = rc.getLocation();
+    	
+    	MapLocation nonDiggingSpot = whereToDigNonDiggingSpot();
+    	if(rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit && nonDiggingSpot != null) {
+    		Direction digDir = currentLoc.directionTo(nonDiggingSpot);
+    		if(rc.canDigDirt(digDir)) {
+    			rc.digDirt(digDir);
+    		}
+    	} else if (rc.getDirtCarrying() == 0) {
+    		MapLocation digLoc = whereToDig();
+    		if(digLoc != null) {
+    			//rc.setIndicatorDot(digLoc, 255, 0, 0);
+	    		Direction digDir = currentLoc.directionTo(digLoc);
+	    		if(rc.canDigDirt(digDir)) {
+	    			rc.digDirt(digDir);
+	    		}
+    		}
+    	}else {
+    		MapLocation depositLoc = whereToDeposit();
+    		if(depositLoc != null) {
+    			//rc.setIndicatorDot(depositLoc, 0, 255, 255);
+	    		Direction depositDir = currentLoc.directionTo(depositLoc);
+	    		if(rc.canDepositDirt(depositDir)) {
+	    			rc.depositDirt(depositDir);
+	    		}
+    		}
+    	}
+    	Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
+    	if(!currentLoc.isWithinDistanceSquared(hqLoc, 70)) {
+    		movementDir = movementDir.rotateLeft().rotateLeft();
+    	}
+    	
+    	if(rc.isReady()) {
+    		nav.noReturnNav(movementDir);
+    	}
+    	
+    }
+    
+    MapLocation whereToDigNonDiggingSpot() throws GameActionException {
+    	MapLocation currentLoc = rc.getLocation();
+    	int currentElevation = rc.senseElevation(currentLoc);
+    	//prioritize non digging spots for digging
+    	for(int i = 0; i < Util.dirsLen; i++) {
+    		MapLocation testLoc = currentLoc.add(Util.dirs[i]);
+    		boolean lowEnough = rc.canSenseLocation(testLoc) && 
+    				rc.senseElevation(testLoc)-3 > currentElevation && 
+    				currentElevation >= landHeight && 
+    				rc.senseElevation(testLoc) < RobotType.LANDSCAPER.dirtLimit+landHeight;
+    		if(rc.canSenseLocation(testLoc) && rc.senseElevation(testLoc) > landHeight && lowEnough) { //if greater than 3 elevation than current elevation
+    			return testLoc;
+    		}
+    	}
+    	return null;
+    }
+    
+    MapLocation whereToDig() throws GameActionException {
+    	MapLocation currentLoc = rc.getLocation();
+    	int currentElevation = rc.senseElevation(currentLoc);
+    	
+    	for(int i = 0; i < Util.dirsLen; i++) {
+    		MapLocation testLoc = currentLoc.add(Util.dirs[i]);
+    		if(rc.canSenseLocation(testLoc) && grid.isDiggingSpot(testLoc)) { //if a digging spot
+    			return testLoc;
+    		}
+    	}
+    	return null;
+    }
+    
+    MapLocation whereToDeposit() throws GameActionException {
+    	MapLocation currentLoc = rc.getLocation();
+    	int currentElevation = rc.senseElevation(currentLoc);
+    	for(int i = 0; i < Util.allDirsLen; i++) {
+    		MapLocation testLoc = currentLoc.add(Util.allDirs[i]);
+    		//if not a digging spot and less than 3 elevation than current elevation
+    		// || rc.senseElevation(testLoc)+3 < currentElevation
+    		if(rc.canSenseLocation(testLoc) && 
+    				!grid.isDiggingSpot(testLoc) && 
+    				(rc.senseElevation(testLoc) < landHeight || rc.senseElevation(testLoc)+3 < currentElevation) &&
+    				rc.senseElevation(testLoc) > -101 &&
+    				!ourBuildingThere(testLoc)) {     			
+    			return testLoc;
+    		}
+    	}
+    	return null;
+    }
+    
+    boolean ourBuildingThere(MapLocation loc) throws GameActionException {
+    	RobotInfo info = rc.senseRobotAtLocation(loc);
+    	if(info != null && info.getTeam().equals(myTeam)&&
+    			(info.getType().equals(RobotType.REFINERY) || 
+    					info.getType().equals(RobotType.DESIGN_SCHOOL) || 
+    					info.getType().equals(RobotType.FULFILLMENT_CENTER) || 
+    					info.getType().equals(RobotType.NET_GUN) || 
+    					info.getType().equals(RobotType.VAPORATOR))) {
+    		return true;
+    	}
+    	return false;
     }
 }
