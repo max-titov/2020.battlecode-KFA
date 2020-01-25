@@ -28,8 +28,6 @@ public class Landscaper extends Unit {
     void runGridLandscaper() throws GameActionException {
     	MapLocation currentLoc = rc.getLocation();
     	
-    	Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
-    	
     	MapLocation nonDiggingSpot = whereToDigNonDiggingSpot();
     	if(rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit && nonDiggingSpot != null) {
     		Direction digDir = currentLoc.directionTo(nonDiggingSpot);
@@ -38,7 +36,6 @@ public class Landscaper extends Unit {
     		}
     	} else if (rc.getDirtCarrying() == 0) {
     		MapLocation digLoc = whereToDig();
-    		System.out.println(digLoc);
     		if(digLoc != null) {
     			//rc.setIndicatorDot(digLoc, 255, 0, 0);
 	    		Direction digDir = currentLoc.directionTo(digLoc);
@@ -56,9 +53,13 @@ public class Landscaper extends Unit {
 	    		}
     		}
     	}
+    	Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
+    	if(!currentLoc.isWithinDistanceSquared(hqLoc, 70)) {
+    		movementDir = movementDir.rotateLeft().rotateLeft();
+    	}
     	
     	if(rc.isReady()) {
-    		nav.noReturnNav(preferedDir);
+    		nav.noReturnNav(movementDir);
     	}
     	
     }
@@ -100,11 +101,27 @@ public class Landscaper extends Unit {
     		MapLocation testLoc = currentLoc.add(Util.allDirs[i]);
     		//if not a digging spot and less than 3 elevation than current elevation
     		// || rc.senseElevation(testLoc)+3 < currentElevation
-    		if(rc.canSenseLocation(testLoc) && !grid.isDiggingSpot(testLoc) && 
-    				(rc.senseElevation(testLoc) < landHeight)) {     			
+    		if(rc.canSenseLocation(testLoc) && 
+    				!grid.isDiggingSpot(testLoc) && 
+    				(rc.senseElevation(testLoc) < landHeight || rc.senseElevation(testLoc)+3 < currentElevation) &&
+    				rc.senseElevation(testLoc) > -101 &&
+    				!ourBuildingThere(testLoc)) {     			
     			return testLoc;
     		}
     	}
     	return null;
+    }
+    
+    boolean ourBuildingThere(MapLocation loc) throws GameActionException {
+    	RobotInfo info = rc.senseRobotAtLocation(loc);
+    	if(info != null && info.getTeam().equals(myTeam)&&
+    			(info.getType().equals(RobotType.REFINERY) || 
+    					info.getType().equals(RobotType.DESIGN_SCHOOL) || 
+    					info.getType().equals(RobotType.FULFILLMENT_CENTER) || 
+    					info.getType().equals(RobotType.NET_GUN) || 
+    					info.getType().equals(RobotType.VAPORATOR))) {
+    		return true;
+    	}
+    	return false;
     }
 }

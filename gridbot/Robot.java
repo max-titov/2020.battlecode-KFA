@@ -9,6 +9,7 @@ public class Robot {
     int[] currentMessages;
     Team myTeam;
     Team opponent;
+    MapLocation hqLoc;
 
     public Robot(RobotController r) {
         this.rc = r;
@@ -39,4 +40,19 @@ public class Robot {
 		}
 		return null;
 	}
+	
+    public void findHQ() throws GameActionException {
+        if (hqLoc == null) {
+            // search surroundings for HQ
+            RobotInfo[] robots = rc.senseNearbyRobots();
+            for (RobotInfo robot : robots) {
+                if (robot.type == RobotType.HQ && robot.team == rc.getTeam()) {
+                    hqLoc = robot.location;
+                    return;
+                }
+            }
+            // if still null, search the blockchain
+            hqLoc = comms.getHqLocFromBlockchain();
+        }
+    }
 }

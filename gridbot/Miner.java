@@ -65,8 +65,10 @@ public class Miner extends Unit {
 					farFromHQ && 
 					farFromRefinery && 
 					enoughSoup) {
-				Direction dirToSoup = currentLoc.directionTo(soupLoc);
-				tryBuild(RobotType.REFINERY, dirToSoup);
+				Direction dirToBuild = currentLoc.directionTo(findSpotOnBuildGrid());
+				if(dirToBuild!=null) {
+					tryBuild(RobotType.REFINERY, dirToBuild);
+				}
 			}
 		}
 
@@ -155,6 +157,16 @@ public class Miner extends Unit {
             return true;
         }
         return false;
+    }
+    
+    MapLocation findSpotOnBuildGrid() throws GameActionException {
+    	for(int i = 0; i<Util.dirsLen;i++) {
+    		MapLocation testLoc = rc.getLocation().add(Util.dirs[i]);
+    		if(grid.isBuildingSpot(testLoc) && rc.senseRobotAtLocation(testLoc)==null) {
+    			return testLoc;
+    		}
+    	}
+    	return null;
     }
     
     ///////////////SOUP METHODS///////////////////////

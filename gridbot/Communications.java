@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Communications {
     RobotController rc;
 
-	static final int KEY = 17;
+	static final int KEY = 37;
 	
 	//messages
 	static final int M_HQ_LOC = 384;
