@@ -12,6 +12,7 @@ public class Communications {
 	final int M_SOUP_MARKER = 804;
 	final int M_REMOVE_SOUP_MARKER = 947;
 	final int M_BUILD_SCHOOL = 283;
+	final int M_ENEMY_HQ_LOC = 987;
 
 	//robot type
 	static final int M_LANDSCAPER = 44;
@@ -101,7 +102,9 @@ public class Communications {
 	}
 	
 	public void sendEnemyHQLoc(MapLocation loc) throws GameActionException {
-		//TODO: finish method
+		int[] m = {M_ENEMY_HQ_LOC, loc.x, loc.y, Util.rand(),Util.rand(),Util.rand()};
+		sendMessage(m, 1);
+
 	}
 	
     public MapLocation getHQLocFromBlockchain() throws GameActionException {
