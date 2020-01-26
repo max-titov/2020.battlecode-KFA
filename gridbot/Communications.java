@@ -78,7 +78,7 @@ public class Communications {
 	}
 	
 	public int[] checkForMessage(int tag, int roundNum) throws GameActionException {
-		int[] m = getMessages();
+		int[] m = getMessages(roundNum);
 		for(int i = 0; i<m.length; i+=6) {
 			if(m[i] == tag) {
 				int[] ret = {m[i+1],m[i+2],m[i+3],m[i+4],m[i+5]};
@@ -108,9 +108,11 @@ public class Communications {
 	}
 	
     public MapLocation getHQLocFromBlockchain() throws GameActionException {
-    	for(int i = 0; i < 3; i++) {
+    	for(int i = 1; i < 3; i++) {
 			int[] m = checkForMessage(M_HQ_LOC, i);
+			
 			if(m != null) {
+				System.out.println(m[0]);
 				return new MapLocation(m[0],m[1]);
 			}
     	}
@@ -134,9 +136,8 @@ public class Communications {
     	return new MapLocation(m[0],m[1]);
     }
     
-    public void broadcastCreation() throws GameActionException {
+    public void broadcastCreation(RobotType t) throws GameActionException {
     	int type = 0;
-    	RobotType t = rc.getType();
     	if(t.equals(RobotType.LANDSCAPER)) {
     		type = M_LANDSCAPER;
     	} else if(t.equals(RobotType.DELIVERY_DRONE)) {
@@ -145,11 +146,13 @@ public class Communications {
     		type = M_VAPORATOR;
     	} else if(t.equals(RobotType.DESIGN_SCHOOL)) {
     		type = M_SCHOOL;
-    	} else {
+    	} else if (t.equals(RobotType.FULFILLMENT_CENTER)){
     		type = M_FULFILLMENT_CENTER;
     	}
-    	int[] m = {type, Util.rand(), Util.rand(), Util.rand(), Util.rand(), Util.rand()};
-    	sendMessage(m, 1);
+    	if(type!= 0) {
+	    	int[] m = {type, Util.rand(), Util.rand(), Util.rand(), Util.rand(), Util.rand()};
+	    	sendMessage(m, 1);
+    	}
     	
     }
     

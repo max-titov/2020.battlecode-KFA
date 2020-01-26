@@ -7,7 +7,7 @@ public class Unit extends Robot {
     
     Grid grid;
 
-    public Unit(RobotController r) {
+    public Unit(RobotController r) throws GameActionException {
         super(r);
         nav = new Navigation(rc);
     }

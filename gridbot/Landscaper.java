@@ -25,8 +25,55 @@ public class Landscaper extends Unit {
     }
     
     void runGridLandscaper() throws GameActionException {
-    	MapLocation currentLoc = rc.getLocation();
+    	if(!defendRush()) {
+    		workOnGrid();
+    	}
     	
+    	
+    }
+    
+    boolean defendRush() throws GameActionException {
+    	//if far from hq or no nearby enemy bots
+    	if(!currentLoc.isWithinDistanceSquared(hqLoc, 50) || !nearbyAttackRobots()) {
+    		return false;
+    	}
+    	System.out.println(currentLoc.directionTo(hqLoc));
+    	//move towards hq and dig dirt from it
+
+    	if(!currentLoc.isAdjacentTo(hqLoc)) {
+    		nav.noReturnNav(hqLoc);
+    		
+    	} else {
+    		Direction dirtohq = currentLoc.directionTo(hqLoc);
+            if(rc.canDigDirt(dirtohq)){
+                rc.digDirt(dirtohq);
+            }
+    	}
+    	
+    	//check for adjacent enemy buildings
+    	for(int i = 0; i<Util.dirsLen;i++) {
+    		RobotInfo testInfo = rc.senseRobotAtLocation(currentLoc.add(Util.dirs[i]));
+    		if(testInfo!= null && building(testInfo, opponent)) {
+    			if(rc.canDepositDirt(Util.dirs[i])){
+                    rc.depositDirt(Util.dirs[i]);
+                }
+    		}
+    	}
+    	//check for adjacent allied buildings
+    	for(int i = 0; i<Util.dirsLen;i++) {
+    		RobotInfo testInfo = rc.senseRobotAtLocation(currentLoc.add(Util.dirs[i]));
+    		if(testInfo!= null && building(testInfo, myTeam)) {
+    			if(rc.canDigDirt(Util.dirs[i])){
+                    rc.depositDirt(Util.dirs[i]);
+                }
+    		}
+    	}
+    	
+    	return true;
+    }
+    
+    
+    void workOnGrid() throws GameActionException {
     	MapLocation nonDiggingSpot = whereToDigNonDiggingSpot();
     	if(rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit && nonDiggingSpot != null) {
     		Direction digDir = currentLoc.directionTo(nonDiggingSpot);
@@ -44,7 +91,7 @@ public class Landscaper extends Unit {
     		}
     	}else {
     		MapLocation depositLoc = whereToDeposit();
-    		if(depositLoc != null) {
+    		if(depositLoc != null && !grid.tooCloseToHQ(depositLoc)) {
     			//rc.setIndicatorDot(depositLoc, 0, 255, 255);
 	    		Direction depositDir = currentLoc.directionTo(depositLoc);
 	    		if(rc.canDepositDirt(depositDir)) {
@@ -53,16 +100,16 @@ public class Landscaper extends Unit {
     		}
     	}
     	Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
-    	if(!currentLoc.isWithinDistanceSquared(hqLoc, 70)) {
+    	if(!currentLoc.isWithinDistanceSquared(hqLoc, round/10)) {
     		movementDir = movementDir.rotateLeft().rotateLeft();
     	}
     	
     	if(rc.isReady()) {
     		nav.noReturnNav(movementDir);
     	}
-    	
     }
     
+    ///////////HELPER METHODS///////////
     MapLocation whereToDigNonDiggingSpot() throws GameActionException {
     	MapLocation currentLoc = rc.getLocation();
     	int currentElevation = rc.senseElevation(currentLoc);
@@ -121,6 +168,17 @@ public class Landscaper extends Unit {
     					info.getType().equals(RobotType.VAPORATOR))) {
     		return true;
     	}
+    	return false;
+    }
+
+    boolean nearbyAttackRobots() {
+    	for (int i = 0; i<nearbyEnemyRobots.length;i++) {
+			if (nearbyEnemyRobots[i].getType().equals(RobotType.DESIGN_SCHOOL) ||
+					nearbyEnemyRobots[i].getType().equals(RobotType.LANDSCAPER) ||
+					nearbyEnemyRobots[i].getType().equals(RobotType.MINER)) {
+				return true;
+			}
+		}
     	return false;
     }
 }

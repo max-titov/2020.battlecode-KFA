@@ -18,7 +18,7 @@ public class Miner extends Unit {
 	static MapLocation firstSchoolLoc = null;
 	static boolean builtFirstSchool = false;
 
-    public Miner(RobotController r) {
+    public Miner(RobotController r) throws GameActionException {
         super(r);
     }
 
@@ -71,6 +71,20 @@ public class Miner extends Unit {
 				}
 			}
 		}
+		
+		RobotType robotToBuild = buildPriority();
+		
+		if(robotToBuild!= null && 
+				(robotToBuild.equals(RobotType.REFINERY) || 
+						robotToBuild.equals(RobotType.DESIGN_SCHOOL) || 
+						robotToBuild.equals(RobotType.FULFILLMENT_CENTER) || 
+						robotToBuild.equals(RobotType.NET_GUN) || 
+						robotToBuild.equals(RobotType.VAPORATOR))) {
+			Direction dirToBuild = currentLoc.directionTo(findSpotOnBuildGrid());
+			if(dirToBuild!=null) {
+				tryBuild(robotToBuild, dirToBuild);
+			}
+		}
 
 		// refining and mining
 		for (int i = 0; i< Util.allDirsLen; i++)
@@ -117,7 +131,7 @@ public class Miner extends Unit {
     	if(firstSchoolLoc != null) {
     		Direction dirToFirstSchool = rc.getLocation().directionTo(firstSchoolLoc);
 			if(!builtFirstSchool && rc.getLocation().isAdjacentTo(firstSchoolLoc) && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, dirToFirstSchool)) {
-				rc.buildRobot(RobotType.DESIGN_SCHOOL, dirToFirstSchool);
+				tryBuild(RobotType.DESIGN_SCHOOL, dirToFirstSchool);
 			}
 			
 			//checking if the first school has been built
@@ -162,7 +176,7 @@ public class Miner extends Unit {
     MapLocation findSpotOnBuildGrid() throws GameActionException {
     	for(int i = 0; i<Util.dirsLen;i++) {
     		MapLocation testLoc = rc.getLocation().add(Util.dirs[i]);
-    		if(grid.isBuildingSpot(testLoc) && rc.senseRobotAtLocation(testLoc)==null) {
+    		if(rc.onTheMap(testLoc) && grid.isBuildingSpot(testLoc) && rc.senseRobotAtLocation(testLoc)==null) {
     			return testLoc;
     		}
     	}
@@ -247,7 +261,7 @@ public class Miner extends Unit {
 		MapLocation[] removeSoupMarkers = new MapLocation[7];
 		int removeSoupMarkersIndex = 0;
 		//find all messages with the soup marker tag
-		for(int i = 0; i<28; i+=4) {
+		for(int i = 0; i<42; i+=6) {
 			if(currentMessages[i] == comms.M_SOUP_MARKER) {
 				newSoupMarkers[newSoupMarkersIndex] = new MapLocation(currentMessages[i+1],currentMessages[i+2]);
 				//System.out.println(newSoupMarkers[newSoupMarkersIndex]);

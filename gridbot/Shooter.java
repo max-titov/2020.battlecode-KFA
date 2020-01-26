@@ -3,7 +3,7 @@ import battlecode.common.*;
 
 public class Shooter extends Building {
 
-    public Shooter(RobotController r) {
+    public Shooter(RobotController r) throws GameActionException {
         super(r);
     }
 

@@ -16,7 +16,6 @@ public class HQ extends Shooter {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        int round = rc.getRoundNum();
         
         if(round<=2) { //sends several times for redundecy purposes
         	comms.sendHQLoc(rc.getLocation());
@@ -33,9 +32,13 @@ public class HQ extends Shooter {
         	sendDesiredSchoolLoc();
         }
         
+        if(round%10==0) {
+        	sendMasterRobotCounts();
+        }
+        
     }
     
-    public void sendDesiredSchoolLoc() throws GameActionException {
+    void sendDesiredSchoolLoc() throws GameActionException {
     	//prefers locations that are north, east, south, or west
     	for(int i = 0; i<Util.cardinalDirsLen; i++) {
     		MapLocation checkLoc = hqLoc.add(Util.cardinalDirs[i]);
@@ -52,4 +55,11 @@ public class HQ extends Shooter {
     		}
     	}
     }
+    
+    void sendMasterRobotCounts() throws GameActionException {
+    	int[] m = {0,landscaperCount,droneCount,vaporatorCount,schoolCount,fulfillmentCenterCount};
+    	
+    	comms.broadcastRobotCounts(m);
+    }
+    
 }

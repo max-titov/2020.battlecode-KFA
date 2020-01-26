@@ -11,7 +11,7 @@ public class Grid {
     }
 	
     boolean isDiggingSpot(MapLocation loc) {
-    	MapLocation modCheckLoc = hqLoc.translate(loc.x, loc.y);
+    	MapLocation modCheckLoc = hqLoc.translate(loc.x+1, loc.y+1);
     	if(modCheckLoc.x%2 == 0 && modCheckLoc.y%2 ==0 && !tooCloseToHQ(loc)) {
     		return true;
     	}
@@ -19,7 +19,7 @@ public class Grid {
     }
     
     boolean isBuildingSpot(MapLocation loc) {
-    	MapLocation modCheckLoc = hqLoc.translate(loc.x+1, loc.y+1);
+    	MapLocation modCheckLoc = hqLoc.translate(loc.x, loc.y);
     	if(modCheckLoc.x%2 == 0 && modCheckLoc.y%2 ==0 && !tooCloseToHQ(loc)) {
     		return true;
     	}
@@ -28,7 +28,7 @@ public class Grid {
     
     boolean tooCloseToHQ(MapLocation loc) {
     	int dist = hqLoc.distanceSquaredTo(loc);
-    	if(dist <= 13 || dist == 18) {
+    	if(dist <= 8) {
     		return true;
     	}
     	return false;

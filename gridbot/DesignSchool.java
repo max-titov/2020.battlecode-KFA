@@ -9,7 +9,6 @@ public class DesignSchool extends Building {
 	
 	public DesignSchool(RobotController r) throws GameActionException {
         super(r);
-        findHQ();
     }
 
     public void takeTurn() throws GameActionException {
@@ -28,7 +27,8 @@ public class DesignSchool extends Building {
     }
     
     void runFirstSchool() throws GameActionException {
-    	if(shouldBuildLandscapers) {
+    	RobotType robotToBuild = buildPriority();
+    	if(shouldBuildLandscapers && robotToBuild!= null && robotToBuild.equals(RobotType.LANDSCAPER)) {
 	    	for(int i = 0; i < Util.dirsLen; i++) {
 				if(tryBuild(RobotType.LANDSCAPER, Util.dirs[i])) {
 					
