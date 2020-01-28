@@ -23,11 +23,14 @@ public class Drone extends Unit {
 	public Drone(RobotController r) throws GameActionException{
 		super(r);
 		hqLoc = comms.getHQLocFromBlockchain();
-		findPotentialEnemyHQ();
+		
 	}
 
 	public void takeTurn() throws GameActionException {
 		super.takeTurn();
+		if(possibleEnemyHQ == null) {
+			findPotentialEnemyHQ();
+		}
 		enemyHQLoc = comms.getEnemyHQLocFromBlockchain();
 		if(enemyHQLoc == null) {
 			droneType = SCOUT_DRONE;
@@ -181,6 +184,7 @@ public class Drone extends Unit {
 
 	void findPotentialEnemyHQ() throws GameActionException {
 		MapLocation mp = nav.l(nav.MAP_WIDTH/2, nav.MAP_HEIGHT/2);
+		possibleEnemyHQ = new MapLocation[3];
 		if(hqLoc.x < mp.x) {
 			if(hqLoc.y < mp.y) { //bottom left
 				possibleEnemyHQ[2] = nav.l(hqLoc.x, nav.MAP_HEIGHT-hqLoc.y);

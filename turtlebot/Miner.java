@@ -1,26 +1,31 @@
-package gridbot;
+package turtlebot;
 import battlecode.common.*;
-import java.util.ArrayList;
 
 public class Miner extends Unit {
 	
-	static int minerType;
-	static final int SOUP_MINER = 1;
-	static final int BUILDER_MINER = 2;
-	static final int EXPLORER_MINER = 3;
+	int minerType;
+	final int SOUP_MINER = 1;
+	final int BUILDER_MINER = 2;
+	final int EXPLORER_MINER = 3;
 	
-	static MapLocation[] soupMarkers = new MapLocation[20];
-	static MapLocation closestSoupMarker = null;
-	static MapLocation soupLoc = null;
-	static MapLocation refineryLoc = null;
-	static int totalNearbySoup;
+	MapLocation[] soupMarkers = new MapLocation[20];
+	MapLocation closestSoupMarker = null;
+	MapLocation soupLoc = null;
+	MapLocation refineryLoc = null;
+	int totalNearbySoup;
 	
-	static MapLocation firstSchoolLoc = null;
-	static boolean builtFirstSchool = false;
+	MapLocation firstSchoolLoc = null;
+	boolean builtFirstSchool = false;
+	
+	MapLocation prevDesiredLoc = currentLoc;
+	int closestToDesiredLoc = 99999;
+	int roundsSinceClosest = 0;
+	int uberRequestRound = -90;
+	MapLocation randomLoc = null;
+	int roundsSinceLastRandomLoc=9999;
 
     public Miner(RobotController r) throws GameActionException {
         super(r);
-        grid.changeRoundRatio(50);
     }
 
     public void takeTurn() throws GameActionException {
@@ -43,6 +48,7 @@ public class Miner extends Unit {
         	break;
         case BUILDER_MINER:
         	runBuilderMiner();
+        	runSoupMiner();
         	break;
         }
     }
@@ -60,24 +66,30 @@ public class Miner extends Unit {
 			boolean farFromHQ = soupLoc.distanceSquaredTo(hqLoc) > 16;
 			boolean farFromRefinery = (refineryLoc == null || soupLoc.distanceSquaredTo(refineryLoc) > 49);
 			boolean enoughSoup = refineryLoc == null || totalNearbySoup >= 1000 || soupLoc.distanceSquaredTo(refineryLoc) > 120;
-			if (closeToSoup && 
+			//boolean stuck = roundsSinceClosest>10;
+			boolean needARefinery = refineryLoc == null && round>100 ;
+			if ((closeToSoup && 
 					farFromHQ && 
 					farFromRefinery && 
-					enoughSoup) {
-				Direction dirToBuild = currentLoc.directionTo(findSpotOnBuildGrid());
-				if(dirToBuild!=null) {
-					tryBuild(RobotType.REFINERY, dirToBuild);
-				}
+					enoughSoup) ||
+					needARefinery) {
+				tryBuild(RobotType.REFINERY, currentLoc.directionTo(soupLoc));
+
 			}
 		}
 		
-		createBuildings();
+		
+		
 
 		// refining and mining
-		for (int i = 0; i< Util.allDirsLen; i++)
-			tryMine(Util.allDirs[i]);
-		for (int i = 0; i< Util.allDirsLen; i++)
-			tryRefine(Util.allDirs[i]);
+		for (int i = 0; i< Util.allDirsLen; i++) {
+			if(tryMine(Util.allDirs[i]))
+				roundsSinceClosest--;
+		}
+		for (int i = 0; i< Util.allDirsLen; i++) {
+			if(tryRefine(Util.allDirs[i]))
+				roundsSinceClosest--;
+		}
 		
 
 		// where to move
@@ -89,32 +101,79 @@ public class Miner extends Unit {
 			} else { // go the hq
 				desiredLoc = hqLoc;
 			}
+			randomLoc=null;
 		}else if (soupLoc != null) { // move towards saved soup location
 			desiredLoc = soupLoc;
+			randomLoc=null;
 		}else if (closestSoupMarker != null) { // move towards soup marker
 			desiredLoc = closestSoupMarker;
+			randomLoc=null;
+		}else {
+			if(randomLoc==null || roundsSinceLastRandomLoc>50) {
+				randomLoc=new MapLocation(Util.rand(nav.MAP_WIDTH),Util.rand(nav.MAP_HEIGHT));
+				roundsSinceLastRandomLoc=0;
+			}
+			if(rc.canSenseLocation(randomLoc)) {
+				randomLoc = null;
+			}else {
+				desiredLoc=randomLoc;
+			}
 		}
+		roundsSinceLastRandomLoc++;
+
 //		System.out.println(desiredLoc);
 
 		Direction desiredDir;
 		if(desiredLoc != null) {
+			if(prevDesiredLoc!=null) {
+				if(roundsSinceClosest>15 && round-uberRequestRound>30) {
+					comms.requestUber(currentLoc, desiredLoc);
+					uberRequestRound=round;
+				}
+				if(desiredLoc.equals(prevDesiredLoc)) {
+					int dist = currentLoc.distanceSquaredTo(desiredLoc);
+					if(dist<closestToDesiredLoc) {
+						roundsSinceClosest = 0;
+						closestToDesiredLoc=dist;
+					}else {
+						roundsSinceClosest++;
+					}
+				}else {
+					closestToDesiredLoc=99999;
+					roundsSinceClosest=0;
+				}
+			}else {
+				closestToDesiredLoc=99999;
+				roundsSinceClosest=0;
+			}
+			prevDesiredLoc=desiredLoc;
+			
 			desiredDir = currentLoc.directionTo(desiredLoc);
 			rc.setIndicatorLine(currentLoc, desiredLoc, 0, 0, 255);
 		}else {
 			desiredDir = Util.randomDirection();
+			prevDesiredLoc=null;
 		}
 		nav.noReturnNav(desiredDir);
 
 	}
     
     void runBuilderMiner() throws GameActionException {
-    	
+    	if(fulfillmentCenterCount==0 && round>60) {
+    		Direction dir = Util.randomDirection();
+    		if(!hqLoc.isWithinDistanceSquared(currentLoc.add(dir),16))
+    			tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+		}
+    	if(fulfillmentCenterCount<2 && round>600) {
+    		Direction dir = Util.randomDirection();
+    		if(!hqLoc.isWithinDistanceSquared(currentLoc.add(dir),16))
+    			tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+		}
     	if(firstSchoolLoc == null) {
     		MapLocation loc = comms.getDesiredSchoolPlacement();
     		if(loc != null) {
     			firstSchoolLoc = loc;
     		}
-    		runSoupMiner();
     	}
     	if(firstSchoolLoc != null) {
     		Direction dirToFirstSchool = rc.getLocation().directionTo(firstSchoolLoc);
@@ -140,23 +199,6 @@ public class Miner extends Unit {
 			}
     	}
     	
-    	if(builtFirstSchool) {
-    		createBuildings();
-    		Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
-        	if(!currentLoc.isWithinDistanceSquared(hqLoc, 16)) {
-        		if(!currentLoc.isWithinDistanceSquared(hqLoc, 36)) {
-        			movementDir = movementDir.opposite();
-        		}else {
-        			movementDir = movementDir.rotateLeft().rotateLeft();
-        		}
-        		
-        	}
-        	
-        	if(rc.isReady()) {
-        		nav.noReturnNav(movementDir);
-        	}
-    	}
-    	
     	
     }
     
@@ -171,48 +213,14 @@ public class Miner extends Unit {
     }
 
     boolean tryRefine(Direction dir) throws GameActionException {
-        if (rc.canDepositSoup(dir)) {
-            rc.depositSoup(dir, rc.getSoupCarrying());
-            return true;
-        }
-        return false;
-    }
-    
-    MapLocation findSpotOnBuildGrid() throws GameActionException {
-    	for(int i = 0; i<Util.dirsLen;i++) {
-    		MapLocation testLoc = rc.getLocation().add(Util.dirs[i]);
-    		if(rc.onTheMap(testLoc) && grid.isBuildingSpot(testLoc) && rc.senseRobotAtLocation(testLoc)==null) {
-    			return testLoc;
-    		}
-    	}
-    	return null;
-    }
-    
-    void createBuildings() throws GameActionException {
-    	RobotType robotToBuild = buildPriority();
-		
-		if(robotToBuild!= null && 
-				(robotToBuild.equals(RobotType.REFINERY) || 
-						robotToBuild.equals(RobotType.DESIGN_SCHOOL) || 
-						robotToBuild.equals(RobotType.FULFILLMENT_CENTER) || 
-						robotToBuild.equals(RobotType.NET_GUN) || 
-						robotToBuild.equals(RobotType.VAPORATOR))) {
-			Direction dirToBuild = currentLoc.directionTo(findSpotOnBuildGrid());
-			if(dirToBuild!=null) {
-				if(robotToBuild.equals(RobotType.DESIGN_SCHOOL)) {
-					if(rc.senseElevation(currentLoc.add(dirToBuild))>=10) {
-						tryBuild(robotToBuild, dirToBuild);
-					}
-				}else if (robotToBuild.equals(RobotType.VAPORATOR)) {
-					if(true) {
-						tryBuild(robotToBuild, dirToBuild);
-					}
-				}else {
-					tryBuild(robotToBuild, dirToBuild);
-				}
-			}
-		}
-    }
+		if(!rc.onTheMap(rc.getLocation().add(dir))) return false;
+		RobotInfo bot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
+		if (rc.canDepositSoup(dir) && bot!= null && bot.getTeam().equals(myTeam)) {
+			rc.depositSoup(dir, rc.getSoupCarrying());
+			return true;
+		} 
+		return false;
+	}
     
     ///////////////SOUP METHODS///////////////////////
 	void soupStuff() throws GameActionException {

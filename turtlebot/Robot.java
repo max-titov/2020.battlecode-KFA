@@ -1,9 +1,12 @@
-package gridbot;
+package turtlebot;
 import battlecode.common.*;
 
 public class Robot {
+	final MapLocation[] unadjustedInnerWallLocs = {l(1,1),l(1,0),l(1,-1),l(0,-1),l(-1,-1),l(-1,0),l(-1,1),l(0,1)};
+	final MapLocation[] unadjustedOuterWallLocs = {l(-2,-1),l(-2,1),l(-2,2),l(-1,2),l(1,2),l(2,2),l(2,1),l(2,-1),l(2,-2),l(1,-2),l(-1,-2),l(-2,-2)};
     RobotController rc;
     Communications comms;
+    Navigation nav;
     int turnCount = 0;
     int[] currentMessages;
     int currentSensorRadius;
@@ -29,6 +32,7 @@ public class Robot {
         myType = rc.getType();
         myTeam = rc.getTeam();
         opponent = myTeam.opponent();
+        nav = new Navigation(rc);
         if(round > 1) {
         	getMasterRobotCounts();
         }
@@ -57,7 +61,7 @@ public class Robot {
         if(round > 1) {
         	updateRobotCounts();
         }
-        System.out.println(landscaperCount+" "+droneCount+" "+vaporatorCount+" "+schoolCount+" "+fulfillmentCenterCount);
+        //System.out.println(landscaperCount+" "+droneCount+" "+vaporatorCount+" "+schoolCount+" "+fulfillmentCenterCount);
     }
 
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
@@ -186,6 +190,28 @@ public class Robot {
     		return true;
     	}
     	return false;
+    }
+    
+    boolean onMap(MapLocation loc) {
+    	if(loc.x < 0 || loc.y < 0 || loc.x > nav.MAP_WIDTH || loc.y > nav.MAP_HEIGHT) {
+    		return false;
+    	}
+    	return true;
+    }
+    
+    MapLocation l(int x, int y) {
+		return new MapLocation(x, y);
+	}
+    
+    int distanceToCorner(MapLocation loc) throws GameActionException {
+    	int[] distances = {loc.distanceSquaredTo(l(0,0)),loc.distanceSquaredTo(l(0,nav.MAP_HEIGHT)),loc.distanceSquaredTo(l(nav.MAP_WIDTH,0)),loc.distanceSquaredTo(l(nav.MAP_WIDTH,nav.MAP_HEIGHT))};
+    	int min = distances[0];
+    	for(int i = 1; i<4;i++) {
+    		if(distances[i]<min) {
+    			min = distances[i];
+    		}
+    	}
+    	return min;
     }
     
 }

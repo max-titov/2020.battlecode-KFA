@@ -100,7 +100,7 @@ public class Landscaper extends Unit {
     		}
     	}
     	Direction movementDir = currentLoc.directionTo(hqLoc).opposite();
-    	if(!currentLoc.isWithinDistanceSquared(hqLoc, round/10)) {
+    	if(!grid.withinBoundsOfGrid(currentLoc)) {
     		movementDir = movementDir.rotateLeft().rotateLeft();
     	}
     	
